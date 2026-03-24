@@ -6,10 +6,16 @@ import 'package:ecosyncai/features/home/presentations/screens/home_screen.dart';
 import 'package:ecosyncai/features/report/presentations/providers/report_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ecosyncai/core/network/network.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main()async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const EcoSyncApp());
+  await Network.init();
+  await SharedPreferences.getInstance().then((value) => value.getString('token') ?? '');
+  runApp(const MyApp());
+
 }
 
 class EcoSyncApp extends StatelessWidget {

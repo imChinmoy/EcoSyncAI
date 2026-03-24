@@ -14,7 +14,7 @@ void main()async {
   WidgetsFlutterBinding.ensureInitialized();
   await Network.init();
   await SharedPreferences.getInstance().then((value) => value.getString('token') ?? '');
-  runApp(const MyApp());
+  runApp(const EcoSyncApp());
 
 }
 

@@ -17,7 +17,18 @@ abstract class RemoteData {
 class RemoteDataImpl implements RemoteData {
   @override
   Future<Either<String, List<BinEntity>>> getBins() async {
-    return Either.right([]);
+    try {
+      final response = await Network.get(ApiEndpoints.getBins);
+      if (response.statusCode == 200) {
+        return Either.right(
+          response.data.map((e) => BinModel.fromJson(e).toEntity()).toList(),
+        );
+      } else {
+        return Either.left(response.statusCode.toString());
+      }
+    } catch (e) {
+      return Either.left(e.toString());
+    }
   }
 
   @override

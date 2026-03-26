@@ -40,3 +40,8 @@ class CaptureReportImageEvent extends ReportEvent {
   final String imagePath;
   const CaptureReportImageEvent(this.imagePath);
 }
+
+class ReportWardSet extends ReportEvent {
+  final int wardId;
+  const ReportWardSet(this.wardId);
+}

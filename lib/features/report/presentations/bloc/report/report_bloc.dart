@@ -16,9 +16,14 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     on<ReportReset>(_onReportReset);
     on<ToggleReportTorchEvent>(_onToggleReportTorch);
     on<CaptureReportImageEvent>(_onCaptureReportImage);
+    on<ReportWardSet>(_onReportWardSet);
   }
 
   final BinService _service;
+
+  void _onReportWardSet(ReportWardSet event, Emitter<ReportState> emit) {
+    emit(state.copyWith(selectedWardId: event.wardId));
+  }
 
   void _onToggleReportTorch(
     ToggleReportTorchEvent event,
@@ -81,17 +86,24 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     ReportSubmitted event,
     Emitter<ReportState> emit,
   ) async {
-    if (state.selectedBin == null || state.description.trim().isEmpty) {
+    if (state.description.trim().isEmpty || !state.hasImage) {
+      return;
+    }
+
+    // Must have either a bin selected or a ward selected
+    if (state.selectedBin == null && state.selectedWardId == null) {
       return;
     }
 
     emit(state.copyWith(status: ReportStatus.submitting, errorMessage: ''));
 
     try {
+      final binId = state.selectedBin?.id ?? 'WARD_${state.selectedWardId}';
+
       final complaint = ComplaintModel(
-        binId: state.selectedBin!.id,
+        binId: binId,
         description: state.description,
-        imagePath: state.hasImage ? 'mock_image_path' : null,
+        imagePath: state.capturedImagePath ?? 'mock_image_path',
         aiLabel: state.aiLabel,
         submittedAt: DateTime.now(),
       );

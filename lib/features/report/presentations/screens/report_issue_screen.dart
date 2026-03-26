@@ -9,6 +9,7 @@ import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_event.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_state.dart';
 import 'package:ecosyncai/features/report/presentations/screens/report_camera_screen.dart';
+import 'package:ecosyncai/features/report/presentations/screens/report_success_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -57,44 +58,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           previous.status != current.status &&
           current.status == ReportStatus.success,
       listener: (context, state) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.statusEmpty,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Complaint submitted successfully!',
-                  style: AppTextStyles.body.copyWith(color: Colors.white),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () =>
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // Reset the form and navigate to success screen
+        context.read<ReportBloc>().add(const ReportReset());
+        _ctrl.clear();
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ReportSuccessScreen()),
         );
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (context.mounted) {
-            context.read<ReportBloc>().add(const ReportReset());
-            _ctrl.clear();
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          }
-        });
       },
       child: BlocBuilder<ReportBloc, ReportState>(
         builder: (context, state) {
@@ -152,9 +123,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                               );
                             }).toList(),
                             onChanged: (value) {
-                              setState(() {
-                                _selectedWardId = value;
-                              });
+                              if (value != null) {
+                                setState(() {
+                                  _selectedWardId = value;
+                                });
+                                context.read<ReportBloc>().add(
+                                  ReportWardSet(value),
+                                );
+                              }
                             },
                           ),
                         ),
@@ -243,6 +219,24 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     onPressed: state.status == ReportStatus.submitting
                         ? null
                         : () {
+                            // Validation: Image is required
+                            if (state.capturedImagePath == null ||
+                                state.capturedImagePath!.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Please capture an image before submitting.',
+                                  ),
+                                  backgroundColor: AppColors.statusFull,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
                             if (_selectedWardId == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -368,7 +362,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             top: 8,
             right: 8,
             child: GestureDetector(
-              onTap: () => context.read<ReportBloc>().add(const ReportImageRemoved()),
+              onTap: () =>
+                  context.read<ReportBloc>().add(const ReportImageRemoved()),
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
@@ -397,7 +392,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 child: Center(
                   child: Text(
                     'Retake Photo',
-                    style: AppTextStyles.body.copyWith(color: Colors.white, fontSize: 12),
+                    style: AppTextStyles.body.copyWith(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),

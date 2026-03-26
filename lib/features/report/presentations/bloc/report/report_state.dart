@@ -5,6 +5,7 @@ enum ReportStatus { idle, submitting, success, error }
 class ReportState {
   final ReportStatus status;
   final BinModel? selectedBin;
+  final int? selectedWardId;
   final String description;
   final bool hasImage;
   final String? capturedImagePath;
@@ -15,6 +16,7 @@ class ReportState {
   const ReportState({
     this.status = ReportStatus.idle,
     this.selectedBin,
+    this.selectedWardId,
     this.description = '',
     this.hasImage = false,
     this.capturedImagePath,
@@ -26,6 +28,7 @@ class ReportState {
   ReportState copyWith({
     ReportStatus? status,
     BinModel? selectedBin,
+    int? selectedWardId,
     bool clearSelectedBin = false,
     String? description,
     bool? hasImage,
@@ -37,6 +40,7 @@ class ReportState {
     return ReportState(
       status: status ?? this.status,
       selectedBin: clearSelectedBin ? null : (selectedBin ?? this.selectedBin),
+      selectedWardId: selectedWardId ?? this.selectedWardId,
       description: description ?? this.description,
       hasImage: hasImage ?? this.hasImage,
       capturedImagePath: capturedImagePath ?? this.capturedImagePath,

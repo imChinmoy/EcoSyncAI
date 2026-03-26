@@ -1,10 +1,12 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/widgets/status_badge.dart';
-import 'package:ecosyncai/features/report/presentations/providers/report_provider.dart';
+import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
+import 'package:ecosyncai/features/report/presentations/bloc/report/report_event.dart';
+import 'package:ecosyncai/features/report/presentations/bloc/report/report_state.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ReportIssueScreen extends StatefulWidget {
   const ReportIssueScreen({super.key});
@@ -24,191 +26,206 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ReportProvider>(
-      builder: (context, reportProv, _) {
-        // After successful submission, show snackbar once
-        if (reportProv.state == ReportState.success) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: AppColors.statusEmpty,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                content: Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    Text('Complaint submitted successfully!',
-                        style: AppTextStyles.body.copyWith(color: Colors.white)),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                      child: const Icon(Icons.close, color: Colors.white70, size: 16),
-                    ),
-                  ],
-                ),
-              ),
-            );
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (context.mounted) {
-                reportProv.reset();
-                _ctrl.clear();
-                Navigator.pop(context);
-              }
-            });
-          });
-        }
-
-        final bin = reportProv.selectedBin ??
-            context.read<BinProvider>().selectedBin;
-
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: const Text('Report Issue'),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-              onPressed: () => Navigator.pop(context),
+    return BlocListener<ReportBloc, ReportState>(
+      listenWhen: (previous, current) =>
+          previous.status != current.status &&
+          current.status == ReportStatus.success,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.statusEmpty,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            content: Row(
               children: [
-                // ── Bin info card ─────────────────────────
-                if (bin != null)
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.divider),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withOpacity(0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.delete_outline,
-                              color: AppColors.primary, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(bin.id, style: AppTextStyles.heading3),
-                                  const SizedBox(width: 8),
-                                  StatusBadge(status: bin.status, small: true),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(bin.address, style: AppTextStyles.bodySecondary,
-                                  overflow: TextOverflow.ellipsis),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 20),
-
-                // ── Description ────────────────────────────
-                Text('Describe the Issue', style: AppTextStyles.heading3),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _ctrl,
-                  maxLines: 5,
-                  onChanged: (v) => reportProv.setDescription(v),
-                  style: AppTextStyles.body,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g., Bin is overflowing...',
-                    alignLabelWithHint: true,
-                  ),
+                const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Complaint submitted successfully!',
+                  style: AppTextStyles.body.copyWith(color: Colors.white),
                 ),
-                const SizedBox(height: 20),
-
-                // ── Photo picker ────────────────────────────
-                Text('Add Photo (Optional)', style: AppTextStyles.heading3),
-                const SizedBox(height: 8),
+                const Spacer(),
                 GestureDetector(
-                  onTap: () => reportProv.pickMockImage(),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: reportProv.hasImage
-                        ? _MockImagePreview(onRemove: reportProv.removeImage)
-                        : _PhotoPickerPlaceholder(),
-                  ),
+                  onTap: () =>
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+                  child: const Icon(Icons.close, color: Colors.white70, size: 16),
                 ),
-                const SizedBox(height: 16),
-
-                // ── AI Label ───────────────────────────────
-                if (reportProv.hasImage && reportProv.aiLabel.isNotEmpty)
-                  _AiLabelChip(label: reportProv.aiLabel),
-                const SizedBox(height: 28),
-
-                // ── Submit button ──────────────────────────
-                ElevatedButton(
-                  onPressed: reportProv.state == ReportState.submitting
-                      ? null
-                      : () {
-                          FocusScope.of(context).unfocus();
-                          reportProv.submitComplaint();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                  ),
-                  child: reportProv.state == ReportState.submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Submit Complaint'),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Error message ─────────────────────────
-                if (reportProv.state == ReportState.error)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusFullBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: AppColors.statusFull, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(reportProv.errorMessage,
-                              style: AppTextStyles.bodySecondary
-                                  .copyWith(color: AppColors.statusFull)),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ),
         );
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (context.mounted) {
+            context.read<ReportBloc>().add(const ReportReset());
+            _ctrl.clear();
+            Navigator.pop(context);
+          }
+        });
       },
+      child: BlocBuilder<ReportBloc, ReportState>(
+        builder: (context, state) {
+          final bin =
+              state.selectedBin ?? context.select((BinBloc bloc) => bloc.state.selectedBin);
+
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              title: const Text('Report Issue'),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (bin != null)
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(bin.id, style: AppTextStyles.heading3),
+                                    const SizedBox(width: 8),
+                                    StatusBadge(status: bin.status, small: true),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  bin.address,
+                                  style: AppTextStyles.bodySecondary,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  Text('Describe the Issue', style: AppTextStyles.heading3),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _ctrl,
+                    maxLines: 5,
+                    onChanged: (value) => context
+                        .read<ReportBloc>()
+                        .add(ReportDescriptionChanged(value)),
+                    style: AppTextStyles.body,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g., Bin is overflowing...',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Add Photo (Optional)', style: AppTextStyles.heading3),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => context
+                        .read<ReportBloc>()
+                        .add(const ReportMockImagePicked()),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: state.hasImage
+                          ? _MockImagePreview(
+                              onRemove: () => context
+                                  .read<ReportBloc>()
+                                  .add(const ReportImageRemoved()),
+                            )
+                          : _PhotoPickerPlaceholder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (state.hasImage && state.aiLabel.isNotEmpty)
+                    _AiLabelChip(label: state.aiLabel),
+                  const SizedBox(height: 28),
+                  ElevatedButton(
+                    onPressed: state.status == ReportStatus.submitting
+                        ? null
+                        : () {
+                            FocusScope.of(context).unfocus();
+                            context.read<ReportBloc>().add(const ReportSubmitted());
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      disabledBackgroundColor:
+                          AppColors.primary.withValues(alpha: 0.5),
+                    ),
+                    child: state.status == ReportStatus.submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Submit Complaint'),
+                  ),
+                  const SizedBox(height: 16),
+                  if (state.status == ReportStatus.error)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusFullBg,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppColors.statusFull,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              state.errorMessage,
+                              style: AppTextStyles.bodySecondary.copyWith(
+                                color: AppColors.statusFull,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
-// ── Photo Picker Placeholder ─────────────────────────────────────────────────
 class _PhotoPickerPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -220,7 +237,7 @@ class _PhotoPickerPlaceholder extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.4),
+          color: AppColors.primary.withValues(alpha: 0.4),
           style: BorderStyle.solid,
           width: 1.5,
         ),
@@ -228,8 +245,11 @@ class _PhotoPickerPlaceholder extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.add_photo_alternate_outlined,
-              size: 36, color: AppColors.primary),
+          const Icon(
+            Icons.add_photo_alternate_outlined,
+            size: 36,
+            color: AppColors.primary,
+          ),
           const SizedBox(height: 6),
           Text('Tap to add photo', style: AppTextStyles.bodySecondary),
         ],
@@ -238,9 +258,9 @@ class _PhotoPickerPlaceholder extends StatelessWidget {
   }
 }
 
-// ── Mock Image Preview ──────────────────────────────────────────────────────
 class _MockImagePreview extends StatelessWidget {
   final VoidCallback onRemove;
+
   const _MockImagePreview({required this.onRemove});
 
   @override
@@ -270,7 +290,9 @@ class _MockImagePreview extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Mock photo selected',
-                  style: AppTextStyles.bodySecondary.copyWith(color: Colors.white70),
+                  style: AppTextStyles.bodySecondary.copyWith(
+                    color: Colors.white70,
+                  ),
                 ),
               ],
             ),
@@ -296,9 +318,9 @@ class _MockImagePreview extends StatelessWidget {
   }
 }
 
-// ── AI Label Chip ─────────────────────────────────────────────────────────────
 class _AiLabelChip extends StatelessWidget {
   final String label;
+
   const _AiLabelChip({required this.label});
 
   @override
@@ -311,7 +333,7 @@ class _AiLabelChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.statusEmptyBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.statusEmpty.withOpacity(0.3)),
+          border: Border.all(color: AppColors.statusEmpty.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

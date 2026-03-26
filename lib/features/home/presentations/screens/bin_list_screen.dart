@@ -1,6 +1,8 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_state.dart';
 import 'package:ecosyncai/features/home/presentations/widgets/bin_card.dart';
 import 'package:ecosyncai/features/home/presentations/widgets/bin_detail_sheet.dart';
 import 'package:ecosyncai/features/home/presentations/widgets/empty_state.dart';
@@ -8,7 +10,7 @@ import 'package:ecosyncai/features/home/presentations/widgets/filter_sheet.dart'
 import 'package:ecosyncai/features/home/presentations/widgets/loading_shimmer.dart';
 import 'package:ecosyncai/features/report/presentations/screens/report_issue_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BinListScreen extends StatelessWidget {
   const BinListScreen({super.key});
@@ -39,9 +41,10 @@ class BinListScreen extends StatelessWidget {
           ),
 
           // ── Active filters row ──────────────────
-          Consumer<BinProvider>(
-            builder: (_, p, __) {
-              final hasFilter = p.statusFilter != 'All' || p.categoryFilter != 'All';
+          BlocBuilder<BinBloc, BinState>(
+            builder: (_, p) {
+              final hasFilter =
+                  p.statusFilter != 'All' || p.categoryFilter != 'All';
               if (!hasFilter) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -52,7 +55,8 @@ class BinListScreen extends StatelessWidget {
                     Text('Filters active', style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
                     const Spacer(),
                     GestureDetector(
-                      onTap: () => p.clearFilters(),
+                      onTap: () =>
+                          context.read<BinBloc>().add(const BinFiltersCleared()),
                       child: Text('Clear', style: AppTextStyles.caption.copyWith(
                         color: AppColors.accent, fontWeight: FontWeight.w600,
                       )),
@@ -65,21 +69,22 @@ class BinListScreen extends StatelessWidget {
 
           // ── Bin list ────────────────────────────
           Expanded(
-            child: Consumer<BinProvider>(
-              builder: (_, binProv, __) {
-                if (binProv.state == BinState.loading || binProv.state == BinState.initial) {
+            child: BlocBuilder<BinBloc, BinState>(
+              builder: (_, binProv) {
+                if (binProv.status == BinStatus.loading ||
+                    binProv.status == BinStatus.initial) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: LoadingShimmer(itemCount: 6),
                   );
                 }
-                if (binProv.state == BinState.empty) {
+                if (binProv.status == BinStatus.empty) {
                   return const EmptyStateWidget(
                     title: 'No bins found',
                     subtitle: 'Try adjusting your search or filters.',
                   );
                 }
-                if (binProv.state == BinState.error) {
+                if (binProv.status == BinStatus.error) {
                   return EmptyStateWidget(
                     title: 'Error loading bins',
                     subtitle: binProv.errorMessage,
@@ -88,13 +93,13 @@ class BinListScreen extends StatelessWidget {
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  itemCount: binProv.bins.length,
+                  itemCount: binProv.filteredBins.length,
                   itemBuilder: (context, i) {
-                    final bin = binProv.bins[i];
+                    final bin = binProv.filteredBins[i];
                     return BinCard(
                       bin: bin,
                       onTap: () {
-                        binProv.selectBin(bin);
+                        context.read<BinBloc>().add(BinSelected(bin));
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
@@ -130,18 +135,18 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: _ctrl,
-      onChanged: (v) => context.read<BinProvider>().onSearch(v),
+      onChanged: (v) => context.read<BinBloc>().add(BinSearchChanged(v)),
       style: AppTextStyles.body,
       decoration: InputDecoration(
         hintText: 'Search bins...',
         prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
-        suffixIcon: Consumer<BinProvider>(
-          builder: (_, p, __) => p.searchQuery.isEmpty
+        suffixIcon: BlocBuilder<BinBloc, BinState>(
+          builder: (_, p) => p.searchQuery.isEmpty
               ? const SizedBox.shrink()
               : GestureDetector(
                   onTap: () {
                     _ctrl.clear();
-                    context.read<BinProvider>().onSearch('');
+                    context.read<BinBloc>().add(const BinSearchChanged(''));
                   },
                   child: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
                 ),
@@ -157,8 +162,8 @@ class _FilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BinProvider>(
-      builder: (_, p, __) {
+    return BlocBuilder<BinBloc, BinState>(
+      builder: (_, p) {
         final isActive = p.statusFilter != 'All' || p.categoryFilter != 'All';
         return GestureDetector(
           onTap: () {

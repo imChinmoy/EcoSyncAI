@@ -1,8 +1,9 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/dummy_data/models/bin_model.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_state.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'bin_marker.dart';
 
 /// Pixel positions for bin markers on the fake map (0.0–1.0 relative)
@@ -28,9 +29,9 @@ class MapPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BinProvider>(
-      builder: (context, binProv, _) {
-        final bins = binProv.bins;
+    return BlocBuilder<BinBloc, BinState>(
+      builder: (context, binProv) {
+        final bins = binProv.filteredBins;
         return ClipRRect(
           borderRadius: BorderRadius.circular(0),
           child: LayoutBuilder(
@@ -77,7 +78,7 @@ class _FakeMapPainter extends CustomPainter {
     final roadPaint = Paint()..color = AppColors.mapRoadColor;
     final blockPaint = Paint()..color = AppColors.mapBlockColor;
     final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..strokeWidth = 1.5;
 
     // Draw green blocks (parks/buildings)

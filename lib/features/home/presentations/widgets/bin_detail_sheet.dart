@@ -1,9 +1,12 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/dummy_data/models/bin_model.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
+import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
+import 'package:ecosyncai/features/report/presentations/bloc/report/report_event.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'status_badge.dart';
 
 class BinDetailSheet extends StatelessWidget {
@@ -59,7 +62,7 @@ class BinDetailSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.3),
+                  color: AppColors.primaryLight.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.delete_outline, color: AppColors.primary, size: 22),
@@ -111,7 +114,8 @@ class BinDetailSheet extends StatelessWidget {
           // Report button
           ElevatedButton.icon(
             onPressed: () {
-              context.read<BinProvider>().selectBin(bin);
+              context.read<BinBloc>().add(BinSelected(bin));
+              context.read<ReportBloc>().add(ReportBinSet(bin));
               Navigator.pop(context);
               onReportIssue();
             },

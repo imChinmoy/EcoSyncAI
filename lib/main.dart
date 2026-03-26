@@ -1,13 +1,12 @@
 import 'package:ecosyncai/core/themes/app_theme.dart';
 import 'package:ecosyncai/dummy_data/services/mock_bin_service.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
-import 'package:ecosyncai/features/home/presentations/providers/ward_provider.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/screens/home_screen.dart';
-import 'package:ecosyncai/features/report/presentations/providers/report_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/core/network/network.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main()async {
@@ -28,11 +27,11 @@ class EcoSyncApp extends StatelessWidget {
     // that implements the same BinService interface.
     final binService = MockBinService();
 
-    return MultiProvider(
+    return MultiBlocProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => BinProvider(binService)),
-        ChangeNotifierProvider(create: (_) => WardProvider()),
-        ChangeNotifierProvider(create: (_) => ReportProvider(binService)),
+        BlocProvider(create: (_) => BinBloc(binService)),
+        BlocProvider(create: (_) => WardBloc()),
+        BlocProvider(create: (_) => ReportBloc(binService)),
       ],
       child: MaterialApp(
         title: 'EcoSync AI',

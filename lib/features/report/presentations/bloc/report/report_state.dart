@@ -7,6 +7,8 @@ class ReportState {
   final BinModel? selectedBin;
   final String description;
   final bool hasImage;
+  final String? capturedImagePath;
+  final bool isTorchOn;
   final String aiLabel;
   final String errorMessage;
 
@@ -15,6 +17,8 @@ class ReportState {
     this.selectedBin,
     this.description = '',
     this.hasImage = false,
+    this.capturedImagePath,
+    this.isTorchOn = false,
     this.aiLabel = '',
     this.errorMessage = '',
   });
@@ -25,6 +29,8 @@ class ReportState {
     bool clearSelectedBin = false,
     String? description,
     bool? hasImage,
+    String? capturedImagePath,
+    bool? isTorchOn,
     String? aiLabel,
     String? errorMessage,
   }) {
@@ -33,6 +39,8 @@ class ReportState {
       selectedBin: clearSelectedBin ? null : (selectedBin ?? this.selectedBin),
       description: description ?? this.description,
       hasImage: hasImage ?? this.hasImage,
+      capturedImagePath: capturedImagePath ?? this.capturedImagePath,
+      isTorchOn: isTorchOn ?? this.isTorchOn,
       aiLabel: aiLabel ?? this.aiLabel,
       errorMessage: errorMessage ?? this.errorMessage,
     );

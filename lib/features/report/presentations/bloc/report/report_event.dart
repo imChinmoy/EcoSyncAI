@@ -31,3 +31,12 @@ class ReportSubmitted extends ReportEvent {
 class ReportReset extends ReportEvent {
   const ReportReset();
 }
+
+class ToggleReportTorchEvent extends ReportEvent {
+  const ToggleReportTorchEvent();
+}
+
+class CaptureReportImageEvent extends ReportEvent {
+  final String imagePath;
+  const CaptureReportImageEvent(this.imagePath);
+}

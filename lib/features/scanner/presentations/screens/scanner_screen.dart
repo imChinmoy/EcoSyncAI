@@ -1,19 +1,90 @@
+import 'package:camera/camera.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
+import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
+import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_event.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ScannerScreen extends StatelessWidget {
+class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
 
   @override
+  State<ScannerScreen> createState() => _ScannerScreenState();
+}
+
+class _ScannerScreenState extends State<ScannerScreen> {
+  CameraController? _controller;
+  Future<void>? _initializeControllerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        if (mounted) {
+          context.read<ScannerBloc>().add(const ScannerError('No cameras available'));
+        }
+        return;
+      }
+
+      final backCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+
+      _controller = CameraController(
+        backCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      _initializeControllerFuture = _controller!.initialize();
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        context.read<ScannerBloc>().add(ScannerError('Camera error: $e'));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _takePicture() async {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      await _initializeControllerFuture;
+      final image = await _controller!.takePicture();
+      if (mounted) {
+        context.read<ScannerBloc>().add(ScannerImageCaptured(image.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        context.read<ScannerBloc>().add(ScannerError('Capture error: $e'));
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // TODO: integrate camera plugin
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 📸 Camera background placeholder
-          _buildCameraPlaceholder(),
+          // 📸 Camera Preview Layer
+          _buildCameraPreview(),
 
           // 🟢 Overlay UI elements
           _buildOverlay(context),
@@ -28,27 +99,32 @@ class ScannerScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCameraPlaceholder() {
+  Widget _buildCameraPreview() {
+    if (_controller == null || _initializeControllerFuture == null) {
+      return _buildLoadingPlaceholder();
+    }
+
+    return FutureBuilder<void>(
+      future: _initializeControllerFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return SizedBox.expand(
+            child: CameraPreview(_controller!),
+          );
+        } else {
+          return _buildLoadingPlaceholder();
+        }
+      },
+    );
+  }
+
+  Widget _buildLoadingPlaceholder() {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.6),
-            Colors.transparent,
-            Colors.black.withOpacity(0.6),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.camera_alt_outlined,
-          color: Colors.white.withOpacity(0.2),
-          size: 100,
-        ),
+      color: Colors.black,
+      child: const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
   }
@@ -204,7 +280,7 @@ class ScannerScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(4.0),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _takePicture,
               style: ElevatedButton.styleFrom(
                 shape: const CircleBorder(),
                 backgroundColor: AppColors.primary,

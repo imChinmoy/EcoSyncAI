@@ -4,17 +4,19 @@ import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
 import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
+import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
 import 'package:ecosyncai/core/network/network.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main()async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Network.init();
-  await SharedPreferences.getInstance().then((value) => value.getString('token') ?? '');
+  await SharedPreferences.getInstance().then(
+    (value) => value.getString('token') ?? '',
+  );
   runApp(const EcoSyncApp());
-
 }
 
 class EcoSyncApp extends StatelessWidget {
@@ -32,6 +34,7 @@ class EcoSyncApp extends StatelessWidget {
         BlocProvider(create: (_) => BinBloc(binService)),
         BlocProvider(create: (_) => WardBloc()),
         BlocProvider(create: (_) => ReportBloc(binService)),
+        BlocProvider(create: (_) => ScannerBloc()),
       ],
       child: MaterialApp(
         title: 'EcoSync AI',

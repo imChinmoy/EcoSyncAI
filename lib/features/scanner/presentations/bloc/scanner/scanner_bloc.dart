@@ -7,32 +7,32 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     on<ScannerImageCaptured>(_onScannerImageCaptured);
     on<ScannerError>(_onScannerError);
     on<ScannerReset>(_onScannerReset);
+    on<TorchToggled>(_onTorchToggled);
+  }
+
+  void _onTorchToggled(TorchToggled event, Emitter<ScannerState> emit) {
+    emit(state.copyWith(isTorchOn: !state.isTorchOn));
   }
 
   void _onScannerImageCaptured(
     ScannerImageCaptured event,
     Emitter<ScannerState> emit,
   ) {
-    emit(state.copyWith(
-      status: ScannerStatus.success,
-      capturedImagePath: event.imagePath,
-    ));
+    emit(
+      state.copyWith(
+        status: ScannerStatus.success,
+        capturedImagePath: event.imagePath,
+      ),
+    );
   }
 
-  void _onScannerError(
-    ScannerError event,
-    Emitter<ScannerState> emit,
-  ) {
-    emit(state.copyWith(
-      status: ScannerStatus.error,
-      errorMessage: event.message,
-    ));
+  void _onScannerError(ScannerError event, Emitter<ScannerState> emit) {
+    emit(
+      state.copyWith(status: ScannerStatus.error, errorMessage: event.message),
+    );
   }
 
-  void _onScannerReset(
-    ScannerReset event,
-    Emitter<ScannerState> emit,
-  ) {
+  void _onScannerReset(ScannerReset event, Emitter<ScannerState> emit) {
     emit(const ScannerState());
   }
 }

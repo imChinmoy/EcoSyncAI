@@ -3,6 +3,7 @@ import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_event.dart';
+import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,7 +29,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         if (mounted) {
-          context.read<ScannerBloc>().add(const ScannerError('No cameras available'));
+          context.read<ScannerBloc>().add(
+            const ScannerError('No cameras available'),
+          );
         }
         return;
       }
@@ -55,8 +58,17 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   void dispose() {
+    _disableTorch();
     _controller?.dispose();
     super.dispose();
+  }
+
+  Future<void> _disableTorch() async {
+    try {
+      if (_controller != null && _controller!.value.isInitialized) {
+        await _controller!.setFlashMode(FlashMode.off);
+      }
+    } catch (_) {}
   }
 
   Future<void> _takePicture() async {
@@ -79,22 +91,39 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // 📸 Camera Preview Layer
-          _buildCameraPreview(),
+    return BlocListener<ScannerBloc, ScannerState>(
+      listenWhen: (previous, current) =>
+          previous.isTorchOn != current.isTorchOn,
+      listener: (context, state) async {
+        if (_controller != null && _controller!.value.isInitialized) {
+          try {
+            await _controller!.setFlashMode(
+              state.isTorchOn ? FlashMode.torch : FlashMode.off,
+            );
+          } catch (e) {
+            if (mounted) {
+              context.read<ScannerBloc>().add(ScannerError('Flash error: $e'));
+            }
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // 📸 Camera Preview Layer
+            _buildCameraPreview(),
 
-          // 🟢 Overlay UI elements
-          _buildOverlay(context),
+            // 🟢 Overlay UI elements
+            _buildOverlay(context),
 
-          // 🔘 Scan Button
-          _buildScanButton(),
+            // 🔘 Scan Button
+            _buildScanButton(),
 
-          // 📦 Bottom control panel
-          _buildBottomControls(),
-        ],
+            // 📦 Bottom control panel
+            _buildBottomControls(),
+          ],
+        ),
       ),
     );
   }
@@ -108,9 +137,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       future: _initializeControllerFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return SizedBox.expand(
-            child: CameraPreview(_controller!),
-          );
+          return SizedBox.expand(child: CameraPreview(_controller!));
         } else {
           return _buildLoadingPlaceholder();
         }
@@ -140,7 +167,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 Text(
@@ -200,7 +231,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             _buildCorner(Alignment.topRight),
             _buildCorner(Alignment.bottomLeft),
             _buildCorner(Alignment.bottomRight),
-            
+
             // Subtle glow in center (simulated)
             Center(
               child: Container(
@@ -241,10 +272,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               bottom: alignment.y == 1 ? 0 : null,
               left: 0,
               right: 0,
-              child: Container(
-                height: thickness,
-                color: color,
-              ),
+              child: Container(height: thickness, color: color),
             ),
             // Vertical line
             Positioned(
@@ -252,10 +280,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               right: alignment.x == 1 ? 0 : null,
               top: 0,
               bottom: 0,
-              child: Container(
-                width: thickness,
-                color: color,
-              ),
+              child: Container(width: thickness, color: color),
             ),
           ],
         ),
@@ -287,7 +312,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 padding: const EdgeInsets.all(16),
                 elevation: 0,
               ),
-              child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.qr_code_scanner,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
           ),
         ),
@@ -310,19 +339,31 @@ class _ScannerScreenState extends State<ScannerScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildControlButton(Icons.photo_library_outlined),
-            _buildControlButton(Icons.flash_on_outlined),
-            _buildControlButton(Icons.settings_outlined),
+            _buildControlButton(Icons.photo_library_outlined, () {}),
+            BlocBuilder<ScannerBloc, ScannerState>(
+              builder: (context, state) {
+                return _buildControlButton(
+                  state.isTorchOn ? Icons.flash_on : Icons.flash_off_outlined,
+                  () => context.read<ScannerBloc>().add(const TorchToggled()),
+                  color: state.isTorchOn ? AppColors.primary : Colors.white,
+                );
+              },
+            ),
+            _buildControlButton(Icons.settings_outlined, () {}),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildControlButton(IconData icon) {
+  Widget _buildControlButton(
+    IconData icon,
+    VoidCallback onPressed, {
+    Color color = Colors.white,
+  }) {
     return IconButton(
-      icon: Icon(icon, color: Colors.white, size: 24),
-      onPressed: () {},
+      icon: Icon(icon, color: color, size: 24),
+      onPressed: onPressed,
     );
   }
 }

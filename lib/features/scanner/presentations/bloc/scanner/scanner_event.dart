@@ -15,3 +15,7 @@ class ScannerError extends ScannerEvent {
 class ScannerReset extends ScannerEvent {
   const ScannerReset();
 }
+
+class TorchToggled extends ScannerEvent {
+  const TorchToggled();
+}

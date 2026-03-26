@@ -24,9 +24,7 @@ class EcoSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MockBinService is injected here.
-    // To plug in a real backend: replace MockBinService() with RealBinService()
-    // that implements the same BinService interface.
+
     final binService = MockBinService();
 
     return MultiBlocProvider(

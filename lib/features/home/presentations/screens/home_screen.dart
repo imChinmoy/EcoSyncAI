@@ -1,345 +1,525 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
-import 'package:ecosyncai/features/home/presentations/providers/ward_provider.dart';
-import 'package:ecosyncai/features/home/presentations/widgets/bin_card.dart';
-import 'package:ecosyncai/features/home/presentations/widgets/bin_detail_sheet.dart';
-import 'package:ecosyncai/features/home/presentations/widgets/empty_state.dart';
-import 'package:ecosyncai/features/home/presentations/widgets/loading_shimmer.dart';
-import 'package:ecosyncai/features/home/presentations/widgets/map_placeholder.dart';
-import 'package:ecosyncai/features/home/presentations/widgets/ward_selection_sheet.dart';
-import 'package:ecosyncai/features/report/presentations/screens/report_issue_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BinProvider>().fetchBins();
-    });
-  }
-
-  @override
-  void dispose() {
-    _sheetController.dispose();
-    super.dispose();
-  }
-
-  void _openWardSheet() {
-    context.read<WardProvider>().resetPending();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const WardSelectionSheet(),
-    );
-  }
-
-  void _showBinDetail(bin) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => BinDetailSheet(
-        bin: bin,
-        onReportIssue: _navigateToReport,
-      ),
-    );
-  }
-
-  void _navigateToReport() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ReportIssueScreen()),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // ── Map section ──────────────────────────────────────
-          Positioned.fill(
-            bottom: MediaQuery.of(context).size.height * 0.18,
-            child: Column(
-              children: [
-                _TopBar(onWardTap: _openWardSheet),
-                Expanded(
-                  child: MapPlaceholder(onMarkerTap: _showBinDetail),
-                ),
-              ],
-            ),
-          ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header Section ───────────────────────────────────────────
+              _buildHeader(),
+              const SizedBox(height: 24),
 
-          // ── Draggable bottom sheet ────────────────────────────
-          DraggableScrollableSheet(
-            controller: _sheetController,
-            initialChildSize: 0.22,
-            minChildSize: 0.18,
-            maxChildSize: 0.90,
-            snap: true,
-            snapSizes: const [0.22, 0.55, 0.90],
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.sheetBackground,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 16,
-                      offset: Offset(0, -4),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Drag handle + sheet header
-                    _SheetHeader(scrollController: scrollController),
-
-                    // Content
-                    Expanded(
-                      child: Consumer<BinProvider>(
-                        builder: (_, binProv, __) {
-                          if (binProv.state == BinState.loading ||
-                              binProv.state == BinState.initial) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: LoadingShimmer(itemCount: 4),
-                            );
-                          }
-                          if (binProv.state == BinState.empty) {
-                            return const EmptyStateWidget(
-                              title: 'No bins in this ward',
-                              subtitle: 'All clear — no bins to show.',
-                              icon: Icons.check_circle_outline,
-                            );
-                          }
-                          if (binProv.state == BinState.error) {
-                            return EmptyStateWidget(
-                              title: 'Something went wrong',
-                              subtitle: binProv.errorMessage,
-                              icon: Icons.error_outline,
-                            );
-                          }
-                          return _BinSheetList(
-                            scrollController: scrollController,
-                            onBinTap: _showBinDetail,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Top Bar ─────────────────────────────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final VoidCallback onWardTap;
-  const _TopBar({required this.onWardTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            // Ward dropdown button
-            Expanded(
-              child: Consumer<WardProvider>(
-                builder: (_, wardProv, __) => GestureDetector(
-                  onTap: onWardTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.divider),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.location_city,
-                            color: AppColors.primary, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            wardProv.selectedWard.name,
-                            style: AppTextStyles.dropdownLabel,
-                          ),
-                        ),
-                        const Icon(Icons.keyboard_arrow_down,
-                            color: AppColors.textSecondary, size: 18),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Notification icon
-            _IconBtn(icon: Icons.notifications_outlined, onTap: () {}),
-            const SizedBox(width: 8),
-            // Profile icon
-            _IconBtn(icon: Icons.person_outline, onTap: () {}),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IconBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Icon(icon, color: AppColors.textSecondary, size: 20),
-      ),
-    );
-  }
-}
-
-// ── Sheet Header ─────────────────────────────────────────────────────────────
-class _SheetHeader extends StatelessWidget {
-  final ScrollController scrollController;
-  const _SheetHeader({required this.scrollController});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: scrollController,
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.iconMuted,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Row(
-              children: [
-                Text('Nearby Bins', style: AppTextStyles.heading2),
-                const Spacer(),
-                Consumer<BinProvider>(
-                  builder: (_, p, __) => Text(
-                    '${p.bins.length} bins',
-                    style: AppTextStyles.bodySecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Stats row
-          Consumer<BinProvider>(
-            builder: (_, p, __) => Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
+              // ── Summary Cards (Diverted & Offset) ───────────────────────
+              Row(
                 children: [
-                  _StatChip(count: p.fullBins, label: 'Full', color: AppColors.statusFull),
-                  const SizedBox(width: 6),
-                  _StatChip(count: p.fillingBins, label: 'Filling', color: AppColors.statusFilling),
-                  const SizedBox(width: 6),
-                  _StatChip(count: p.emptyBins, label: 'Empty', color: AppColors.statusEmpty),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      icon: Icons.recycling,
+                      label: 'Diverted',
+                      value: '12.4 kg',
+                      iconColor: AppColors.statusEmpty,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      icon: Icons.co2,
+                      label: 'Offset',
+                      value: '48 kg',
+                      iconColor: Colors.blueAccent,
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 28),
+
+              // ── AI Scanner Section ───────────────────────────────────────
+              _buildAiScannerCard(),
+              const SizedBox(height: 32),
+
+              // ── Nearby & Schedules Section ───────────────────────────────
+              _buildSectionTitle('Nearby & Schedules'),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: _buildNearbyBinsCard()),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 2, child: _buildScheduleCard()),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // ── Materials Saved Section ──────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildSectionTitle('Materials Saved'),
+                  Text(
+                    'HISTORY',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildMaterialSavedItem(
+                label: 'Biodegradable',
+                subLabel: 'Organic Waste',
+                value: '5.2 kg',
+                status: 'SUCCESS',
+                color: AppColors.statusEmpty,
+              ),
+              const SizedBox(height: 12),
+              _buildMaterialSavedItem(
+                label: 'Recyclables',
+                subLabel: 'Plastic & Paper',
+                value: '4.8 kg',
+                status: 'TRACKING',
+                color: Colors.lightBlueAccent,
+              ),
+              const SizedBox(height: 12),
+              _buildMaterialSavedItem(
+                label: 'E-Waste',
+                subLabel: 'Electronics',
+                value: '2.4 kg',
+                status: '',
+                color: Colors.indigoAccent,
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
-}
 
-class _StatChip extends StatelessWidget {
-  final int count;
-  final String label;
-  final Color color;
-  const _StatChip({required this.count, required this.label, required this.color});
+  // ── Helper Widgets ────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'GLOBAL CITIZEN',
+              style: AppTextStyles.caption.copyWith(
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Hello, Alex',
+              style: AppTextStyles.heading1.copyWith(fontSize: 28),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                '340 pts',
+                style: AppTextStyles.heading3.copyWith(
+                  color: AppColors.statusEmpty,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'ECO TIER: GOLD',
+                style: AppTextStyles.caption.copyWith(fontSize: 9),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 4),
-          Text('$count $label', style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.w600)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppTextStyles.bodySecondary),
+              Text(
+                value,
+                style: AppTextStyles.heading3.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
-}
 
-// ── Bin Sheet List ────────────────────────────────────────────────────────────
-class _BinSheetList extends StatelessWidget {
-  final ScrollController scrollController;
-  final void Function(dynamic bin) onBinTap;
-
-  const _BinSheetList({
-    required this.scrollController,
-    required this.onBinTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<BinProvider>(
-      builder: (_, binProv, __) {
-        return ListView.builder(
-          controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          itemCount: binProv.bins.length,
-          itemBuilder: (_, i) => BinCard(
-            bin: binProv.bins[i],
-            onTap: () => onBinTap(binProv.bins[i]),
+  Widget _buildAiScannerCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A1A1A), Color(0xFF2D2D2D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-        );
-      },
+        ],
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.qr_code_scanner,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    color: Colors.amber,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Identify & Sort',
+            style: AppTextStyles.heading2.copyWith(
+              color: Colors.white,
+              fontSize: 22,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Point your camera at any waste\nitem to get instant AI sorting\nadvice.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySecondary.copyWith(color: Colors.white70),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+            child: const Text('Launch AI Scanner'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(title, style: AppTextStyles.heading2.copyWith(fontSize: 18));
+  }
+
+  Widget _buildNearbyBinsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.statusEmpty.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: AppColors.statusEmpty,
+                  size: 20,
+                ),
+              ),
+              Text(
+                '3 ACTIVE HUBS',
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text('Nearby Bins', style: AppTextStyles.heading3),
+          const SizedBox(height: 4),
+          Text(
+            'Find a drop-off point within 500m',
+            style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildTinyAvatar(Colors.grey[300]!),
+              const SizedBox(width: 4),
+              _buildTinyAvatar(Colors.grey[400]!),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTinyAvatar(Color color) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+    );
+  }
+
+  Widget _buildScheduleCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blueAccent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.calendar_today,
+              color: Colors.blueAccent,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text('Tue 14', style: AppTextStyles.heading3),
+          const SizedBox(height: 4),
+          Text(
+            'RECYCLE DAY',
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMaterialSavedItem({
+    required String label,
+    required String subLabel,
+    required String value,
+    required String status,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: AppTextStyles.heading3),
+                Text(
+                  subLabel,
+                  style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: AppTextStyles.heading3.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (status.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: status == 'SUCCESS'
+                        ? AppColors.statusEmpty.withValues(alpha: 0.1)
+                        : Colors.blueAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    status,
+                    style: AppTextStyles.caption.copyWith(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: status == 'SUCCESS'
+                          ? AppColors.statusEmpty
+                          : Colors.blueAccent,
+                    ),
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 4),
+                Container(
+                  width: 50,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: 0.6,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

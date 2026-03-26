@@ -35,12 +35,12 @@ class _LoadingShimmerState extends State<LoadingShimmer>
   Widget _shimmerBox({double width = double.infinity, double height = 14.0, double radius = 8}) {
     return AnimatedBuilder(
       animation: _animation,
-      builder: (_, __) => Container(
+      builder: (context, child) => Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(radius),
-          color: AppColors.primaryLight.withOpacity(_animation.value),
+          color: AppColors.primaryLight.withValues(alpha: _animation.value),
         ),
       ),
     );
@@ -81,7 +81,7 @@ class _LoadingShimmerState extends State<LoadingShimmer>
     return ListView.builder(
       physics: const NeverScrollableScrollPhysics(),
       itemCount: widget.itemCount,
-      itemBuilder: (_, __) => _shimmerCard(),
+      itemBuilder: (context, index) => _shimmerCard(),
     );
   }
 }

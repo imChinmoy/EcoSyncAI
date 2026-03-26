@@ -15,7 +15,7 @@ class _ToggleSwitchState extends State<ToggleSwitch> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(

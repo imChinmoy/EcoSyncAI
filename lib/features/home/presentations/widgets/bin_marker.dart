@@ -62,7 +62,7 @@ class _BinMarkerState extends State<BinMarker>
       onTap: widget.onTap,
       child: AnimatedBuilder(
         animation: _pulseAnimation,
-        builder: (_, __) => Transform.scale(
+        builder: (context, child) => Transform.scale(
           scale: _pulseAnimation.value,
           child: Container(
             width: 28,
@@ -73,7 +73,7 @@ class _BinMarkerState extends State<BinMarker>
               border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: _color.withOpacity(0.4),
+                  color: _color.withValues(alpha: 0.4),
                   blurRadius: 6,
                   spreadRadius: 1,
                 ),

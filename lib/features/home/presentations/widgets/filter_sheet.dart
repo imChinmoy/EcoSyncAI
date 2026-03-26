@@ -1,9 +1,10 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/core/utils/app_constants.dart';
-import 'package:ecosyncai/features/home/presentations/providers/bin_provider.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FilterSheet extends StatefulWidget {
   const FilterSheet({super.key});
@@ -19,9 +20,9 @@ class _FilterSheetState extends State<FilterSheet> {
   @override
   void initState() {
     super.initState();
-    final provider = context.read<BinProvider>();
-    _selectedStatus = provider.statusFilter;
-    _selectedCategory = provider.categoryFilter;
+    final state = context.read<BinBloc>().state;
+    _selectedStatus = state.statusFilter;
+    _selectedCategory = state.categoryFilter;
   }
 
   @override
@@ -94,7 +95,7 @@ class _FilterSheetState extends State<FilterSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    context.read<BinProvider>().clearFilters();
+                    context.read<BinBloc>().add(const BinFiltersCleared());
                     Navigator.pop(context);
                   },
                   style: OutlinedButton.styleFrom(
@@ -110,9 +111,11 @@ class _FilterSheetState extends State<FilterSheet> {
                 flex: 2,
                 child: ElevatedButton(
                   onPressed: () {
-                    context.read<BinProvider>().applyFilter(
-                      status: _selectedStatus,
-                      category: _selectedCategory,
+                    context.read<BinBloc>().add(
+                      BinFilterApplied(
+                        status: _selectedStatus,
+                        category: _selectedCategory,
+                      ),
                     );
                     Navigator.pop(context);
                   },

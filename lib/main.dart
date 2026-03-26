@@ -2,7 +2,7 @@ import 'package:ecosyncai/core/themes/app_theme.dart';
 import 'package:ecosyncai/dummy_data/services/mock_bin_service.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
-import 'package:ecosyncai/features/home/presentations/screens/home_screen.dart';
+import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/core/network/network.dart';
 import 'package:flutter/material.dart';
@@ -37,7 +37,7 @@ class EcoSyncApp extends StatelessWidget {
         title: 'EcoSync AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const HomeScreen(),
+        home: const MainNavigationScreen(),
       ),
     );
   }

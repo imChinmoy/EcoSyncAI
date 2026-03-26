@@ -1,6 +1,8 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_state.dart';
 import 'package:ecosyncai/features/home/presentations/widgets/status_badge.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_event.dart';
@@ -17,6 +19,17 @@ class ReportIssueScreen extends StatefulWidget {
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
   final TextEditingController _ctrl = TextEditingController();
+  int? _selectedWardId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-select ward if a bin is already selected
+    final bin = context.read<BinBloc>().state.selectedBin;
+    if (bin != null) {
+      _selectedWardId = bin.wardId;
+    }
+  }
 
   @override
   void dispose() {
@@ -50,7 +63,11 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 GestureDetector(
                   onTap: () =>
                       ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                  child: const Icon(Icons.close, color: Colors.white70, size: 16),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white70,
+                    size: 16,
+                  ),
                 ),
               ],
             ),
@@ -60,30 +77,81 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           if (context.mounted) {
             context.read<ReportBloc>().add(const ReportReset());
             _ctrl.clear();
-            Navigator.pop(context);
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
           }
         });
       },
       child: BlocBuilder<ReportBloc, ReportState>(
         builder: (context, state) {
           final bin =
-              state.selectedBin ?? context.select((BinBloc bloc) => bloc.state.selectedBin);
+              state.selectedBin ??
+              context.select((BinBloc bloc) => bloc.state.selectedBin);
 
           return Scaffold(
             backgroundColor: AppColors.background,
             appBar: AppBar(
               title: const Text('Report Issue'),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                onPressed: () => Navigator.pop(context),
-              ),
+              leading: Navigator.canPop(context)
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  : null,
             ),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (bin != null)
+                  // Ward Selection Dropdown
+                  Text('Select Ward', style: AppTextStyles.heading3),
+                  const SizedBox(height: 8),
+                  BlocBuilder<WardBloc, WardState>(
+                    builder: (context, wardState) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.divider),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int>(
+                            value: _selectedWardId,
+                            hint: Text(
+                              'Select Ward',
+                              style: AppTextStyles.bodySecondary,
+                            ),
+                            isExpanded: true,
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: AppColors.textSecondary,
+                            ),
+                            items: wardState.wards.map((ward) {
+                              return DropdownMenuItem<int>(
+                                value: ward.id,
+                                child: Text(
+                                  ward.name,
+                                  style: AppTextStyles.body,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedWardId = value;
+                              });
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  if (bin != null) ...[
+                    Text('Selected Bin', style: AppTextStyles.heading3),
+                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -96,7 +164,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryLight.withValues(alpha: 0.3),
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.3,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -114,7 +184,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                   children: [
                                     Text(bin.id, style: AppTextStyles.heading3),
                                     const SizedBox(width: 8),
-                                    StatusBadge(status: bin.status, small: true),
+                                    StatusBadge(
+                                      status: bin.status,
+                                      small: true,
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
@@ -129,15 +202,16 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         ],
                       ),
                     ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                  ],
                   Text('Describe the Issue', style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _ctrl,
                     maxLines: 5,
-                    onChanged: (value) => context
-                        .read<ReportBloc>()
-                        .add(ReportDescriptionChanged(value)),
+                    onChanged: (value) => context.read<ReportBloc>().add(
+                      ReportDescriptionChanged(value),
+                    ),
                     style: AppTextStyles.body,
                     decoration: const InputDecoration(
                       hintText: 'e.g., Bin is overflowing...',
@@ -148,16 +222,16 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   Text('Add Photo (Optional)', style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: () => context
-                        .read<ReportBloc>()
-                        .add(const ReportMockImagePicked()),
+                    onTap: () => context.read<ReportBloc>().add(
+                      const ReportMockImagePicked(),
+                    ),
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       child: state.hasImage
                           ? _MockImagePreview(
-                              onRemove: () => context
-                                  .read<ReportBloc>()
-                                  .add(const ReportImageRemoved()),
+                              onRemove: () => context.read<ReportBloc>().add(
+                                const ReportImageRemoved(),
+                              ),
                             )
                           : _PhotoPickerPlaceholder(),
                     ),
@@ -170,13 +244,31 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     onPressed: state.status == ReportStatus.submitting
                         ? null
                         : () {
+                            if (_selectedWardId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Please select a ward first',
+                                  ),
+                                  backgroundColor: AppColors.statusFull,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
                             FocusScope.of(context).unfocus();
-                            context.read<ReportBloc>().add(const ReportSubmitted());
+                            context.read<ReportBloc>().add(
+                              const ReportSubmitted(),
+                            );
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      disabledBackgroundColor:
-                          AppColors.primary.withValues(alpha: 0.5),
+                      disabledBackgroundColor: AppColors.primary.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                     child: state.status == ReportStatus.submitting
                         ? const SizedBox(
@@ -275,10 +367,7 @@ class _MockImagePreview extends StatelessWidget {
             height: 180,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.grey.shade600,
-                  Colors.grey.shade400,
-                ],
+                colors: [Colors.grey.shade600, Colors.grey.shade400],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -286,7 +375,11 @@ class _MockImagePreview extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.image_outlined, size: 48, color: Colors.white70),
+                const Icon(
+                  Icons.image_outlined,
+                  size: 48,
+                  color: Colors.white70,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Mock photo selected',
@@ -333,12 +426,18 @@ class _AiLabelChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.statusEmptyBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.statusEmpty.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: AppColors.statusEmpty.withValues(alpha: 0.3),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.auto_awesome, color: AppColors.statusEmpty, size: 16),
+            const Icon(
+              Icons.auto_awesome,
+              color: AppColors.statusEmpty,
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Text(
               label,

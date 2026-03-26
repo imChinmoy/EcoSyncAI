@@ -347,7 +347,7 @@ class _AiLabelChip extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             const Icon(Icons.recycling, color: AppColors.statusEmpty, size: 16),
           ],
         ),

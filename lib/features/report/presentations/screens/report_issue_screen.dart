@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
@@ -7,6 +8,8 @@ import 'package:ecosyncai/features/home/presentations/widgets/status_badge.dart'
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_event.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_state.dart';
+import 'package:ecosyncai/features/report/presentations/screens/report_camera_screen.dart';
+import 'package:ecosyncai/features/report/presentations/screens/report_success_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,6 +40,17 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     super.dispose();
   }
 
+  Future<void> _openCamera() async {
+    final String? imagePath = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const ReportCameraScreen()),
+    );
+
+    if (imagePath != null && mounted) {
+      context.read<ReportBloc>().add(CaptureReportImageEvent(imagePath));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ReportBloc, ReportState>(
@@ -44,44 +58,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           previous.status != current.status &&
           current.status == ReportStatus.success,
       listener: (context, state) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.statusEmpty,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Complaint submitted successfully!',
-                  style: AppTextStyles.body.copyWith(color: Colors.white),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () =>
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // Reset the form and navigate to success screen
+        context.read<ReportBloc>().add(const ReportReset());
+        _ctrl.clear();
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ReportSuccessScreen()),
         );
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (context.mounted) {
-            context.read<ReportBloc>().add(const ReportReset());
-            _ctrl.clear();
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          }
-        });
       },
       child: BlocBuilder<ReportBloc, ReportState>(
         builder: (context, state) {
@@ -139,9 +123,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                               );
                             }).toList(),
                             onChanged: (value) {
-                              setState(() {
-                                _selectedWardId = value;
-                              });
+                              if (value != null) {
+                                setState(() {
+                                  _selectedWardId = value;
+                                });
+                                context.read<ReportBloc>().add(
+                                  ReportWardSet(value),
+                                );
+                              }
                             },
                           ),
                         ),
@@ -219,24 +208,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text('Add Photo (Optional)', style: AppTextStyles.heading3),
+                  Text('Add Photo', style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => context.read<ReportBloc>().add(
-                      const ReportMockImagePicked(),
-                    ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: state.hasImage
-                          ? _MockImagePreview(
-                              onRemove: () => context.read<ReportBloc>().add(
-                                const ReportImageRemoved(),
-                              ),
-                            )
-                          : _PhotoPickerPlaceholder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  _buildPhotoSection(state),
+                  const SizedBox(height: 20),
                   if (state.hasImage && state.aiLabel.isNotEmpty)
                     _AiLabelChip(label: state.aiLabel),
                   const SizedBox(height: 28),
@@ -244,6 +219,24 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     onPressed: state.status == ReportStatus.submitting
                         ? null
                         : () {
+                            // Validation: Image is required
+                            if (state.capturedImagePath == null ||
+                                state.capturedImagePath!.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Please capture an image before submitting.',
+                                  ),
+                                  backgroundColor: AppColors.statusFull,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
                             if (_selectedWardId == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -316,97 +309,100 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       ),
     );
   }
-}
 
-class _PhotoPickerPlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: const ValueKey('placeholder'),
-      width: double.infinity,
-      height: 130,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.4),
-          style: BorderStyle.solid,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.add_photo_alternate_outlined,
-            size: 36,
-            color: AppColors.primary,
+  Widget _buildPhotoSection(ReportState state) {
+    if (state.capturedImagePath != null) {
+      return _buildCapturedImagePreview(state);
+    }
+
+    return GestureDetector(
+      onTap: _openCamera,
+      child: Container(
+        height: 130,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.4),
+            style: BorderStyle.solid,
+            width: 1.5,
           ),
-          const SizedBox(height: 6),
-          Text('Tap to add photo', style: AppTextStyles.bodySecondary),
-        ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.add_a_photo_outlined,
+              size: 36,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 8),
+            Text('Tap to take a photo', style: AppTextStyles.bodySecondary),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _MockImagePreview extends StatelessWidget {
-  final VoidCallback onRemove;
-
-  const _MockImagePreview({required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      key: const ValueKey('preview'),
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            width: double.infinity,
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.grey.shade600, Colors.grey.shade400],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+  Widget _buildCapturedImagePreview(ReportState state) {
+    return Container(
+      height: 180,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        image: DecorationImage(
+          image: FileImage(File(state.capturedImagePath!)),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () =>
+                  context.read<ReportBloc>().add(const ReportImageRemoved()),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 20),
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.image_outlined,
-                  size: 48,
-                  color: Colors.white70,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Mock photo selected',
-                  style: AppTextStyles.bodySecondary.copyWith(
-                    color: Colors.white70,
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: _openCamera,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(14),
+                    bottomRight: Radius.circular(14),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
+                child: Center(
+                  child: Text(
+                    'Retake Photo',
+                    style: AppTextStyles.body.copyWith(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ),
-              child: const Icon(Icons.close, color: Colors.white, size: 16),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

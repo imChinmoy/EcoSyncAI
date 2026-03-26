@@ -14,9 +14,36 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     on<ReportImageRemoved>(_onReportImageRemoved);
     on<ReportSubmitted>(_onReportSubmitted);
     on<ReportReset>(_onReportReset);
+    on<ToggleReportTorchEvent>(_onToggleReportTorch);
+    on<CaptureReportImageEvent>(_onCaptureReportImage);
+    on<ReportWardSet>(_onReportWardSet);
   }
 
   final BinService _service;
+
+  void _onReportWardSet(ReportWardSet event, Emitter<ReportState> emit) {
+    emit(state.copyWith(selectedWardId: event.wardId));
+  }
+
+  void _onToggleReportTorch(
+    ToggleReportTorchEvent event,
+    Emitter<ReportState> emit,
+  ) {
+    emit(state.copyWith(isTorchOn: !state.isTorchOn));
+  }
+
+  void _onCaptureReportImage(
+    CaptureReportImageEvent event,
+    Emitter<ReportState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        capturedImagePath: event.imagePath,
+        hasImage: true,
+        aiLabel: 'Detected Waste', // Placeholder for now
+      ),
+    );
+  }
 
   void _onReportBinSet(ReportBinSet event, Emitter<ReportState> emit) {
     emit(
@@ -38,28 +65,45 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     emit(state.copyWith(description: event.description));
   }
 
-  void _onReportMockImagePicked(ReportMockImagePicked event, Emitter<ReportState> emit) {
+  void _onReportMockImagePicked(
+    ReportMockImagePicked event,
+    Emitter<ReportState> emit,
+  ) {
     final labels = AppConstants.aiLabels;
-    final aiLabel = labels[DateTime.now().millisecondsSinceEpoch % labels.length];
+    final aiLabel =
+        labels[DateTime.now().millisecondsSinceEpoch % labels.length];
     emit(state.copyWith(hasImage: true, aiLabel: aiLabel));
   }
 
-  void _onReportImageRemoved(ReportImageRemoved event, Emitter<ReportState> emit) {
-    emit(state.copyWith(hasImage: false, aiLabel: ''));
+  void _onReportImageRemoved(
+    ReportImageRemoved event,
+    Emitter<ReportState> emit,
+  ) {
+    emit(state.copyWith(hasImage: false, aiLabel: '', capturedImagePath: null));
   }
 
-  Future<void> _onReportSubmitted(ReportSubmitted event, Emitter<ReportState> emit) async {
-    if (state.selectedBin == null || state.description.trim().isEmpty) {
+  Future<void> _onReportSubmitted(
+    ReportSubmitted event,
+    Emitter<ReportState> emit,
+  ) async {
+    if (state.description.trim().isEmpty || !state.hasImage) {
+      return;
+    }
+
+    // Must have either a bin selected or a ward selected
+    if (state.selectedBin == null && state.selectedWardId == null) {
       return;
     }
 
     emit(state.copyWith(status: ReportStatus.submitting, errorMessage: ''));
 
     try {
+      final binId = state.selectedBin?.id ?? 'WARD_${state.selectedWardId}';
+
       final complaint = ComplaintModel(
-        binId: state.selectedBin!.id,
+        binId: binId,
         description: state.description,
-        imagePath: state.hasImage ? 'mock_image_path' : null,
+        imagePath: state.capturedImagePath ?? 'mock_image_path',
         aiLabel: state.aiLabel,
         submittedAt: DateTime.now(),
       );
@@ -82,14 +126,6 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
   }
 
   void _onReportReset(ReportReset event, Emitter<ReportState> emit) {
-    emit(
-      state.copyWith(
-        status: ReportStatus.idle,
-        description: '',
-        hasImage: false,
-        aiLabel: '',
-        errorMessage: '',
-      ),
-    );
+    emit(const ReportState());
   }
 }

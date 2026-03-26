@@ -1,5 +1,6 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
+import 'package:ecosyncai/features/scanner/presentations/screens/scanner_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -44,7 +45,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 28),
 
               // ── AI Scanner Section ───────────────────────────────────────
-              _buildAiScannerCard(),
+              _buildAiScannerCard(context),
               const SizedBox(height: 32),
 
               // ── Nearby & Schedules Section ───────────────────────────────
@@ -210,7 +211,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAiScannerCard() {
+  Widget _buildAiScannerCard(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -287,7 +288,12 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ScannerScreen()),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,

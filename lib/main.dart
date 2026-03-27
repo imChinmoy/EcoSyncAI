@@ -6,6 +6,8 @@ import 'package:ecosyncai/features/home/data/repository/bin_repo_impl.dart';
 import 'package:ecosyncai/features/home/data/repository/ward_repo_impl.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
+import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
+import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
 import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:ecosyncai/features/report/data/datasource/report_remote_data.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
@@ -45,12 +47,7 @@ class EcoSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remote = RemoteDataImpl();
-    final repo = BinRepoImpl(remoteData: remote);
-    final wardRepo = WardRepoImpl(remoteData: remote);
-    final reportRemote = ReportRemoteDataImpl();
-    final scannerRemote = ScannerRemoteDataImpl();
-    final scannerRepo = ScannerRepoImpl(remoteData: scannerRemote);
+    final binService = MockBinService();
 
     return MultiBlocProvider(
       providers: [
@@ -62,10 +59,13 @@ class EcoSyncApp extends StatelessWidget {
       child: MaterialApp(
         title: 'EcoSync AI',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark,
-        home: const MainNavigationScreen(),
+        theme: AppTheme.lightTheme,
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const RoleSelectionScreen(),
+          '/user_home': (context) => const MainNavigationScreen(),
+          '/driver_home': (context) => const DriverHomeScreen(),
+        },
       ),
     );
   }

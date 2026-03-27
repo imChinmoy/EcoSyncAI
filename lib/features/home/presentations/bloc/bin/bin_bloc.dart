@@ -1,22 +1,27 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
-import 'package:ecosyncai/dummy_data/services/bin_service.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
+import 'package:ecosyncai/features/home/domain/repository/bin_repository.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'bin_event.dart';
 import 'bin_state.dart';
 
 class BinBloc extends Bloc<BinEvent, BinState> {
-  BinBloc(this._service) : super(const BinState()) {
+  final BinRepository _repository;
+
+  BinBloc(this._repository) : super(const BinState()) {
     on<FetchBinsRequested>(_onFetchBinsRequested);
     on<BinSelected>(_onBinSelected);
     on<BinSelectionCleared>(_onBinSelectionCleared);
     on<BinSearchChanged>(_onBinSearchChanged);
     on<BinFilterApplied>(_onBinFilterApplied);
     on<BinFiltersCleared>(_onBinFiltersCleared);
+    on<UserLocationUpdated>(_onUserLocationUpdated);
   }
 
-  final BinService _service;
-
+  // ─────────────────────────────────────────────
+  // FETCH FROM API
+  // ─────────────────────────────────────────────
   Future<void> _onFetchBinsRequested(
     FetchBinsRequested event,
     Emitter<BinState> emit,
@@ -29,32 +34,53 @@ class BinBloc extends Bloc<BinEvent, BinState> {
       ),
     );
 
-    try {
-      final bins = await _service.getBins(wardId: event.wardId);
-      emit(_buildFilteredState(state.copyWith(allBins: bins, selectedWardId: event.wardId)));
-    } catch (_) {
-      emit(
-        state.copyWith(
-          status: BinStatus.error,
-          errorMessage: 'Failed to load bins. Please try again.',
-        ),
-      );
-    }
+    final result = await _repository.getBins(wardId: event.wardId);
+
+    result.fold(
+      (error) {
+        emit(
+          state.copyWith(
+            status: BinStatus.error,
+            errorMessage: error,
+          ),
+        );
+      },
+      (bins) {
+        emit(
+          _buildFilteredState(
+            state.copyWith(
+              allBins: bins,
+              selectedWardId: event.wardId,
+            ),
+          ),
+        );
+      },
+    );
   }
 
+  // ─────────────────────────────────────────────
   void _onBinSelected(BinSelected event, Emitter<BinState> emit) {
     emit(state.copyWith(selectedBin: event.bin));
   }
 
-  void _onBinSelectionCleared(BinSelectionCleared event, Emitter<BinState> emit) {
+  void _onBinSelectionCleared(
+    BinSelectionCleared event,
+    Emitter<BinState> emit,
+  ) {
     emit(state.copyWith(clearSelectedBin: true));
   }
 
-  void _onBinSearchChanged(BinSearchChanged event, Emitter<BinState> emit) {
+  void _onBinSearchChanged(
+    BinSearchChanged event,
+    Emitter<BinState> emit,
+  ) {
     emit(_buildFilteredState(state.copyWith(searchQuery: event.query)));
   }
 
-  void _onBinFilterApplied(BinFilterApplied event, Emitter<BinState> emit) {
+  void _onBinFilterApplied(
+    BinFilterApplied event,
+    Emitter<BinState> emit,
+  ) {
     emit(
       _buildFilteredState(
         state.copyWith(
@@ -65,7 +91,10 @@ class BinBloc extends Bloc<BinEvent, BinState> {
     );
   }
 
-  void _onBinFiltersCleared(BinFiltersCleared event, Emitter<BinState> emit) {
+  void _onBinFiltersCleared(
+    BinFiltersCleared event,
+    Emitter<BinState> emit,
+  ) {
     emit(
       _buildFilteredState(
         state.copyWith(
@@ -77,12 +106,32 @@ class BinBloc extends Bloc<BinEvent, BinState> {
     );
   }
 
+  void _onUserLocationUpdated(
+    UserLocationUpdated event,
+    Emitter<BinState> emit,
+  ) {
+    emit(
+      _buildFilteredState(
+        state.copyWith(
+          userLatitude: event.latitude,
+          userLongitude: event.longitude,
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // FILTER LOGIC (UNCHANGED, BUT NOW ENTITY-BASED)
+  // ─────────────────────────────────────────────
   BinState _buildFilteredState(BinState baseState) {
     final filteredBins = _applyFilters(
       bins: baseState.allBins,
       searchQuery: baseState.searchQuery,
       statusFilter: baseState.statusFilter,
       categoryFilter: baseState.categoryFilter,
+      userLatitude: baseState.userLatitude,
+      userLongitude: baseState.userLongitude,
+      radiusKm: baseState.radiusKm,
     );
 
     final nextStatus =
@@ -95,23 +144,41 @@ class BinBloc extends Bloc<BinEvent, BinState> {
     );
   }
 
-  List<BinModel> _applyFilters({
-    required List<BinModel> bins,
+  List<BinEntity> _applyFilters({
+    required List<BinEntity> bins,
     required String searchQuery,
     required String statusFilter,
     required String categoryFilter,
+    required double? userLatitude,
+    required double? userLongitude,
+    required double radiusKm,
   }) {
     return bins.where((bin) {
-      final normalizedQuery = searchQuery.toLowerCase();
-      final matchesSearch = normalizedQuery.isEmpty ||
-          bin.id.toLowerCase().contains(normalizedQuery) ||
-          bin.address.toLowerCase().contains(normalizedQuery) ||
-          bin.category.toLowerCase().contains(normalizedQuery);
+      final query = searchQuery.toLowerCase();
 
-      final matchesStatus = statusFilter == 'All' || bin.status == statusFilter;
-      final matchesCategory = categoryFilter == 'All' || bin.category == categoryFilter;
+      final matchesSearch = query.isEmpty ||
+          bin.id.toLowerCase().contains(query) ||
+          bin.address.toLowerCase().contains(query) ||
+          bin.category.toLowerCase().contains(query);
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      final matchesStatus =
+          statusFilter == 'All' || bin.status == statusFilter;
+
+      final matchesCategory =
+          categoryFilter == 'All' || bin.category == categoryFilter;
+
+      final matchesRadius = userLatitude == null || userLongitude == null
+          ? true
+          : (Geolocator.distanceBetween(
+                    userLatitude,
+                    userLongitude,
+                    bin.lat,
+                    bin.lng,
+                  ) /
+                  1000) <=
+              radiusKm;
+
+      return matchesSearch && matchesStatus && matchesCategory && matchesRadius;
     }).toList();
   }
 }

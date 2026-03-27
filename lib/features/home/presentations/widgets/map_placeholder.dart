@@ -1,119 +1,342 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:ecosyncai/core/themes/app_color.dart';
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'bin_marker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-/// Pixel positions for bin markers on the fake map (0.0–1.0 relative)
-const _binPositions = [
-  Offset(0.18, 0.22),
-  Offset(0.42, 0.35),
-  Offset(0.65, 0.18),
-  Offset(0.72, 0.55),
-  Offset(0.30, 0.60),
-  Offset(0.55, 0.70),
-  Offset(0.80, 0.75),
-  Offset(0.10, 0.70),
-  Offset(0.48, 0.82),
-  Offset(0.20, 0.45),
-  Offset(0.88, 0.35),
-  Offset(0.62, 0.48),
-];
-
-class MapPlaceholder extends StatelessWidget {
-  final void Function(BinModel) onMarkerTap;
+class MapPlaceholder extends StatefulWidget {
+  final void Function(BinEntity) onMarkerTap;
 
   const MapPlaceholder({super.key, required this.onMarkerTap});
 
   @override
+  State<MapPlaceholder> createState() => _MapPlaceholderState();
+}
+
+class _MapPlaceholderState extends State<MapPlaceholder> {
+  static const LatLng _fallbackCenter = LatLng(28.6139, 77.2090);
+  static const String _darkBlueMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#0f1724"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#8fa5c4"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#0b1220"}]},
+  {"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#2b3a50"}]},
+  {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#6f86a5"}]},
+  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#1a2740"}]},
+  {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#111c30"}]},
+  {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#88a1c0"}]},
+  {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1a2a44"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0a2238"}]},
+  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#5f83ad"}]}
+]
+''';
+
+  GoogleMapController? _mapController;
+  StreamSubscription<Position>? _positionSub;
+  Position? _currentPosition;
+  bool _permissionDenied = false;
+  BitmapDescriptor? _fullBinIcon;
+  BitmapDescriptor? _fillingBinIcon;
+  BitmapDescriptor? _emptyBinIcon;
+  BitmapDescriptor? _nearbyBinIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareMarkerIcons();
+    _initLocation();
+  }
+
+  @override
+  void dispose() {
+    _positionSub?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) setState(() => _permissionDenied = true);
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (mounted) setState(() => _permissionDenied = true);
+      return;
+    }
+
+    final current = await Geolocator.getCurrentPosition();
+    if (!mounted) return;
+    setState(() {
+      _currentPosition = current;
+      _permissionDenied = false;
+    });
+    context.read<BinBloc>().add(
+          UserLocationUpdated(
+            latitude: current.latitude,
+            longitude: current.longitude,
+          ),
+        );
+
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 5,
+      ),
+    ).listen((pos) {
+      if (!mounted) return;
+      setState(() => _currentPosition = pos);
+      context.read<BinBloc>().add(
+            UserLocationUpdated(
+              latitude: pos.latitude,
+              longitude: pos.longitude,
+            ),
+          );
+    });
+  }
+
+  Future<void> _prepareMarkerIcons() async {
+    final full = await _createBinMarkerIcon(AppColors.statusFull);
+    final filling = await _createBinMarkerIcon(AppColors.statusFilling);
+    final empty = await _createBinMarkerIcon(AppColors.statusEmpty);
+    final nearby = await _createBinMarkerIcon(AppColors.primary);
+    if (!mounted) return;
+    setState(() {
+      _fullBinIcon = full;
+      _fillingBinIcon = filling;
+      _emptyBinIcon = empty;
+      _nearbyBinIcon = nearby;
+    });
+  }
+
+  Future<BitmapDescriptor> _createBinMarkerIcon(Color color) async {
+    const size = 96.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final center = const Offset(size / 2, size / 2);
+
+    final shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.25);
+    canvas.drawCircle(center.translate(0, 4), 34, shadowPaint);
+
+    final circlePaint = Paint()..color = color;
+    canvas.drawCircle(center, 32, circlePaint);
+    canvas.drawCircle(
+      center,
+      32,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.25)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+
+    final iconPainter = TextPainter(textDirection: TextDirection.ltr);
+    iconPainter.text = TextSpan(
+      text: String.fromCharCode(Icons.delete_outline.codePoint),
+      style: TextStyle(
+        fontSize: 42,
+        fontFamily: Icons.delete_outline.fontFamily,
+        package: Icons.delete_outline.fontPackage,
+        color: Colors.white,
+      ),
+    );
+    iconPainter.layout();
+    iconPainter.paint(
+      canvas,
+      Offset(
+        (size - iconPainter.width) / 2,
+        (size - iconPainter.height) / 2,
+      ),
+    );
+
+    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
+  }
+
+  Set<Marker> _buildBinMarkers(List<BinEntity> bins) {
+    return bins
+        .map(
+          (bin) {
+            final distanceKm = _distanceFromUserKm(bin);
+            final nearby = distanceKm != null && distanceKm <= 1.0;
+            final distanceLabel = distanceKm == null
+                ? ''
+                : ' • ${distanceKm.toStringAsFixed(2)} km';
+
+            return Marker(
+              markerId: MarkerId(bin.id),
+              position: LatLng(bin.lat, bin.lng),
+              infoWindow: InfoWindow(
+                title: bin.id,
+                snippet:
+                    '${bin.status} • ${bin.category}${nearby ? ' • nearby' : ''}$distanceLabel',
+                onTap: () => widget.onMarkerTap(bin),
+              ),
+              icon: _iconForStatus(bin.status, nearby: nearby),
+              onTap: () => widget.onMarkerTap(bin),
+            );
+          },
+        )
+        .toSet();
+  }
+
+  double? _distanceFromUserKm(BinEntity bin) {
+    if (_currentPosition == null) return null;
+    final meters = Geolocator.distanceBetween(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      bin.lat,
+      bin.lng,
+    );
+    return meters / 1000;
+  }
+
+  BitmapDescriptor _iconForStatus(String status, {required bool nearby}) {
+    if (nearby && _nearbyBinIcon != null) return _nearbyBinIcon!;
+
+    switch (status.toLowerCase()) {
+      case 'full':
+        return _fullBinIcon ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+      case 'filling':
+        return _fillingBinIcon ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+      default:
+        return _emptyBinIcon ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+    }
+  }
+
+  Future<void> _fitCameraToContent(List<BinEntity> bins) async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    final points = <LatLng>[
+      if (_currentPosition != null)
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      ...bins.map((b) => LatLng(b.lat, b.lng)),
+    ];
+    if (points.isEmpty) return;
+
+    if (points.length == 1) {
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: points.first, zoom: 15),
+        ),
+      );
+      return;
+    }
+
+    var minLat = points.first.latitude;
+    var maxLat = points.first.latitude;
+    var minLng = points.first.longitude;
+    var maxLng = points.first.longitude;
+
+    for (final point in points.skip(1)) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+    await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+  }
+
+  Future<void> _goToCurrentLocation() async {
+    final controller = _mapController;
+    final pos = _currentPosition;
+    if (controller == null || pos == null) return;
+
+    await controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(pos.latitude, pos.longitude),
+          zoom: 16,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<BinBloc, BinState>(
-      builder: (context, binProv) {
-        final bins = binProv.filteredBins;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final w = constraints.maxWidth;
-              final h = constraints.maxHeight;
-              return Stack(
-                children: [
-                  // Map background
-                  Container(
-                    color: AppColors.mapBackground,
-                    child: CustomPaint(
-                      painter: _FakeMapPainter(),
-                      size: Size(w, h),
+      buildWhen: (previous, current) =>
+          previous.filteredBins != current.filteredBins,
+      builder: (context, binState) {
+        final bins = binState.filteredBins;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fitCameraToContent(bins);
+        });
+
+        return Stack(
+          children: [
+            GoogleMap(
+              myLocationEnabled: _currentPosition != null,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              compassEnabled: true,
+              initialCameraPosition: CameraPosition(
+                target: _currentPosition == null
+                    ? _fallbackCenter
+                    : LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      ),
+                zoom: 13,
+              ),
+              markers: _buildBinMarkers(bins),
+              onMapCreated: (controller) {
+                _mapController = controller;
+                controller.setMapStyle(_darkBlueMapStyle);
+                _fitCameraToContent(bins);
+              },
+            ),
+            Positioned(
+              left: 12,
+              bottom: 12,
+              child: FilledButton.icon(
+                onPressed: _goToCurrentLocation,
+                icon: const Icon(Icons.my_location, size: 16),
+                label: const Text('My location'),
+              ),
+            ),
+            if (_permissionDenied)
+              Positioned(
+                left: 12,
+                right: 12,
+                top: 12,
+                child: Material(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(10),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Text(
+                      'Location permission denied. Enable it to show your live position.',
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
-
-                  // Bin markers
-                  ...List.generate(bins.length, (i) {
-                    final pos = _binPositions[i % _binPositions.length];
-                    return Positioned(
-                      left: pos.dx * w - 14,
-                      top: pos.dy * h - 14,
-                      child: BinMarker(
-                        status: bins[i].status,
-                        binId: bins[i].id,
-                        onTap: () => onMarkerTap(bins[i]),
-                      ),
-                    );
-                  }),
-                ],
-              );
-            },
-          ),
+                ),
+              ),
+          ],
         );
       },
     );
   }
-}
-
-class _FakeMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final roadPaint = Paint()..color = AppColors.mapRoadColor;
-    final blockPaint = Paint()..color = AppColors.mapBlockColor;
-    final linePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
-      ..strokeWidth = 1.5;
-
-    // Draw green blocks (parks/buildings)
-    final blocks = [
-      Rect.fromLTWH(size.width * 0.05, size.height * 0.05, size.width * 0.25, size.height * 0.22),
-      Rect.fromLTWH(size.width * 0.40, size.height * 0.10, size.width * 0.20, size.height * 0.18),
-      Rect.fromLTWH(size.width * 0.70, size.height * 0.05, size.width * 0.22, size.height * 0.25),
-      Rect.fromLTWH(size.width * 0.05, size.height * 0.50, size.width * 0.18, size.height * 0.30),
-      Rect.fromLTWH(size.width * 0.55, size.height * 0.55, size.width * 0.20, size.height * 0.20),
-      Rect.fromLTWH(size.width * 0.28, size.height * 0.68, size.width * 0.22, size.height * 0.22),
-      Rect.fromLTWH(size.width * 0.75, size.height * 0.65, size.width * 0.20, size.height * 0.22),
-    ];
-
-    for (final block in blocks) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(block, const Radius.circular(6)),
-        blockPaint,
-      );
-    }
-
-    // Horizontal roads
-    for (int i = 1; i <= 3; i++) {
-      final y = size.height * (i / 4.0);
-      canvas.drawRect(Rect.fromLTWH(0, y - 8, size.width, 16), roadPaint);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-
-    // Vertical roads
-    for (int i = 1; i <= 3; i++) {
-      final x = size.width * (i / 4.0);
-      canvas.drawRect(Rect.fromLTWH(x - 8, 0, 16, size.height), roadPaint);
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

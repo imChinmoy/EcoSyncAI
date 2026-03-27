@@ -1,11 +1,12 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
+import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 import 'package:flutter/material.dart';
 import 'status_badge.dart';
 
 class BinCard extends StatelessWidget {
-  final BinModel bin;
+  final BinEntity bin;
   final VoidCallback onTap;
 
   const BinCard({super.key, required this.bin, required this.onTap});
@@ -21,24 +22,11 @@ class BinCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: GlassCard(
         margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        radius: 16,
+        child: Row(
             children: [
               Expanded(
                 child: Column(
@@ -87,11 +75,9 @@ class BinCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.iconMuted, size: 20),
+              const Icon(Icons.chevron_right, color: AppColors.iconMuted, size: 20),
             ],
           ),
-        ),
       ),
     );
   }

@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used to show nearby bins on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location is used to keep nearby bins updated in real time.</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyDWIgFsEfcmymW9hKuVZHgPB1SIMSK2kcE</string>
 </dict>
 </plist>

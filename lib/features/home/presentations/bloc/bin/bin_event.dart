@@ -1,4 +1,4 @@
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 
 abstract class BinEvent {
   const BinEvent();
@@ -11,7 +11,7 @@ class FetchBinsRequested extends BinEvent {
 }
 
 class BinSelected extends BinEvent {
-  final BinModel bin;
+  final BinEntity bin;
 
   const BinSelected(this.bin);
 }
@@ -35,4 +35,14 @@ class BinFilterApplied extends BinEvent {
 
 class BinFiltersCleared extends BinEvent {
   const BinFiltersCleared();
+}
+
+class UserLocationUpdated extends BinEvent {
+  final double latitude;
+  final double longitude;
+
+  const UserLocationUpdated({
+    required this.latitude,
+    required this.longitude,
+  });
 }

@@ -1,6 +1,7 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
+import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
@@ -10,7 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'status_badge.dart';
 
 class BinDetailSheet extends StatelessWidget {
-  final BinModel bin;
+  final BinEntity bin;
   final VoidCallback onReportIssue;
 
   const BinDetailSheet({
@@ -34,12 +35,9 @@ class BinDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      decoration: const BoxDecoration(
-        color: AppColors.sheetBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      radius: 24,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

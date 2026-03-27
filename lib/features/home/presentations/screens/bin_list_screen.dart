@@ -1,4 +1,5 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
+import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
@@ -174,20 +175,16 @@ class _FilterButton extends StatelessWidget {
               builder: (_) => const FilterSheet(),
             );
           },
-          child: Container(
+          child: SizedBox(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.primary : AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isActive ? AppColors.primary : AppColors.divider,
+            child: GlassCard(
+              radius: 12,
+              child: Icon(
+                Icons.tune,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                size: 20,
               ),
-            ),
-            child: Icon(
-              Icons.tune,
-              color: isActive ? Colors.white : AppColors.textSecondary,
-              size: 20,
             ),
           ),
         );

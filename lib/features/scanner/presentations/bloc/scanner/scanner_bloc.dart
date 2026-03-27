@@ -1,9 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ecosyncai/features/scanner/domain/repository/scanner_repository.dart';
 import 'scanner_event.dart';
 import 'scanner_state.dart';
 
 class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
-  ScannerBloc() : super(const ScannerState()) {
+  final ScannerRepository _repository;
+
+  ScannerBloc(this._repository) : super(const ScannerState()) {
     on<ScannerImageCaptured>(_onScannerImageCaptured);
     on<ScannerError>(_onScannerError);
     on<ScannerReset>(_onScannerReset);
@@ -14,15 +17,34 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
     emit(state.copyWith(isTorchOn: !state.isTorchOn));
   }
 
-  void _onScannerImageCaptured(
+  Future<void> _onScannerImageCaptured(
     ScannerImageCaptured event,
     Emitter<ScannerState> emit,
-  ) {
+  ) async {
     emit(
       state.copyWith(
-        status: ScannerStatus.success,
+        status: ScannerStatus.loading,
         capturedImagePath: event.imagePath,
+        clearError: true,
+        clearResult: true,
       ),
+    );
+
+    final result = await _repository.classifyImage(event.imagePath);
+
+    result.fold(
+      (error) {
+        emit(
+          state.copyWith(
+            status: ScannerStatus.error,
+            errorMessage: error,
+            clearResult: true,
+          ),
+        );
+      },
+      (data) {
+        emit(state.copyWith(status: ScannerStatus.success, result: data));
+      },
     );
   }
 
@@ -33,6 +55,6 @@ class ScannerBloc extends Bloc<ScannerEvent, ScannerState> {
   }
 
   void _onScannerReset(ScannerReset event, Emitter<ScannerState> emit) {
-    emit(const ScannerState());
+    emit(state.copyWith(status: ScannerStatus.initial, clearError: true, clearResult: true));
   }
 }

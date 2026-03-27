@@ -1,5 +1,7 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
+import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
+import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:flutter/material.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -33,7 +35,12 @@ class RoleSelectionScreen extends StatelessWidget {
                 subtitle: 'I want to report and track waste',
                 icon: Icons.person_outline,
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/user_home');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MainNavigationScreen(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 20),
@@ -42,7 +49,12 @@ class RoleSelectionScreen extends StatelessWidget {
                 subtitle: 'I am here to collect and manage waste',
                 icon: Icons.local_shipping_outlined,
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/driver_home');
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DriverHomeScreen(),
+                    ),
+                  );
                 },
               ),
               const Spacer(),

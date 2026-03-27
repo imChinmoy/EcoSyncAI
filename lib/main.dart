@@ -4,6 +4,12 @@ import 'package:ecosyncai/core/locale/app_locale_scope.dart';
 import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/locale/locale_controller.dart';
 import 'package:ecosyncai/core/themes/app_theme.dart';
+import 'package:ecosyncai/features/auth/presentations/screens/login_screen.dart';
+import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
+import 'package:ecosyncai/features/driver/data/datasource/driver_dummy_datasource.dart';
+import 'package:ecosyncai/features/driver/data/repository/driver_repository_impl.dart';
+import 'package:ecosyncai/features/driver/domain/usecases/get_driver_task_detail.dart';
+import 'package:ecosyncai/features/driver/presentations/bloc/driver/driver_bloc.dart';
 import 'package:ecosyncai/features/home/data/datasource/remote_data.dart';
 import 'package:ecosyncai/features/home/data/repository/bin_repo_impl.dart';
 import 'package:ecosyncai/features/home/data/repository/ward_repo_impl.dart';
@@ -60,6 +66,9 @@ class EcoSyncApp extends StatelessWidget {
     final reportRemote = ReportRemoteDataImpl();
     final scannerRemote = ScannerRemoteDataImpl();
     final scannerRepo = ScannerRepoImpl(remoteData: scannerRemote);
+    final driverDataSource = DriverDummyDataSource();
+    final driverRepo = DriverRepositoryImpl(driverDataSource);
+    final getDriverTaskDetail = GetDriverTaskDetail(driverRepo);
 
     return MultiBlocProvider(
       providers: [
@@ -67,6 +76,9 @@ class EcoSyncApp extends StatelessWidget {
         BlocProvider(create: (_) => WardBloc(wardRepo)),
         BlocProvider(create: (_) => ReportBloc(reportRemote)),
         BlocProvider(create: (_) => ScannerBloc(scannerRepo)),
+        BlocProvider(
+          create: (_) => DriverBloc(getDriverTaskDetail: getDriverTaskDetail),
+        ),
       ],
       child: AppLocaleScope(
         controller: localeController,
@@ -87,7 +99,7 @@ class EcoSyncApp extends StatelessWidget {
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
-              home: const SplashScreen(),
+              home: const RoleSelectionScreen(),
             );
           },
         ),

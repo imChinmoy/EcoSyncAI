@@ -1,3 +1,4 @@
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
@@ -35,6 +36,7 @@ class BinDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GlassCard(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       radius: 24,
@@ -81,12 +83,12 @@ class BinDetailSheet extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Details
-          _DetailRow(icon: Icons.category_outlined, label: 'Category', value: bin.category),
-          _DetailRow(icon: Icons.location_on_outlined, label: 'Address', value: bin.address),
+          _DetailRow(icon: Icons.category_outlined, label: l10n.category, value: bin.category),
+          _DetailRow(icon: Icons.location_on_outlined, label: l10n.addressLabel, value: bin.address),
           const SizedBox(height: 12),
 
           // Capacity
-          Text('Capacity', style: AppTextStyles.heading3),
+          Text(l10n.capacity, style: AppTextStyles.heading3),
           const SizedBox(height: 8),
           Row(children: [
             Expanded(
@@ -104,9 +106,9 @@ class BinDetailSheet extends StatelessWidget {
             Text('${bin.capacity}%', style: AppTextStyles.heading3.copyWith(color: _capacityColor)),
           ]),
           const SizedBox(height: 4),
-          Text('${bin.capacity}% Full', style: AppTextStyles.bodySecondary),
+          Text('${bin.capacity}${l10n.percentFull}', style: AppTextStyles.bodySecondary),
           const SizedBox(height: 12),
-          _DetailRow(icon: Icons.access_time, label: 'Last Updated', value: _formatTime(bin.lastUpdated)),
+          _DetailRow(icon: Icons.access_time, label: l10n.lastUpdatedLabel, value: _formatTime(bin.lastUpdated)),
           const SizedBox(height: 24),
 
           // Report button
@@ -118,7 +120,7 @@ class BinDetailSheet extends StatelessWidget {
               onReportIssue();
             },
             icon: const Icon(Icons.report_outlined, size: 18),
-            label: const Text('Report Issue'),
+            label: Text(l10n.reportIssue),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accent,
               minimumSize: const Size.fromHeight(52),

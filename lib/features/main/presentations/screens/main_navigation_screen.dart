@@ -1,3 +1,4 @@
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/features/home/presentations/screens/home_screen.dart';
 import 'package:ecosyncai/features/home/presentations/screens/map_screen.dart';
@@ -30,6 +31,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -42,26 +44,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: l10n.navHome,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.report_problem_outlined),
-            activeIcon: Icon(Icons.report_problem),
-            label: 'Report',
+            icon: const Icon(Icons.report_problem_outlined),
+            activeIcon: const Icon(Icons.report_problem),
+            label: l10n.navReport,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: 'Map',
+            icon: const Icon(Icons.map_outlined),
+            activeIcon: const Icon(Icons.map),
+            label: l10n.navMap,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: l10n.navProfile,
           ),
         ],
       ),

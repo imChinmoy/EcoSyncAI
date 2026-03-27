@@ -1,3 +1,4 @@
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
@@ -18,10 +19,11 @@ class BinListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Waste Bins'),
+        title: Text(l10n.wasteBins),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.pop(context),
@@ -53,12 +55,12 @@ class BinListScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.filter_list, size: 14, color: AppColors.primary),
                     const SizedBox(width: 4),
-                    Text('Filters active', style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
+                    Text(l10n.filtersActive, style: AppTextStyles.caption.copyWith(color: AppColors.primary)),
                     const Spacer(),
                     GestureDetector(
                       onTap: () =>
                           context.read<BinBloc>().add(const BinFiltersCleared()),
-                      child: Text('Clear', style: AppTextStyles.caption.copyWith(
+                      child: Text(l10n.clear, style: AppTextStyles.caption.copyWith(
                         color: AppColors.accent, fontWeight: FontWeight.w600,
                       )),
                     ),

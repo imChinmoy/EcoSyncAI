@@ -11,6 +11,7 @@ class BinBloc extends Bloc<BinEvent, BinState> {
 
   BinBloc(this._repository) : super(const BinState()) {
     on<FetchBinsRequested>(_onFetchBinsRequested);
+    on<FetchGlobalBinsForStatsRequested>(_onFetchGlobalBinsForStatsRequested);
     on<BinSelected>(_onBinSelected);
     on<BinSelectionCleared>(_onBinSelectionCleared);
     on<BinSearchChanged>(_onBinSearchChanged);
@@ -51,10 +52,24 @@ class BinBloc extends Bloc<BinEvent, BinState> {
             state.copyWith(
               allBins: bins,
               selectedWardId: event.wardId,
+              allBinsGlobal: event.wardId == 0 ? bins : state.allBinsGlobal,
             ),
           ),
         );
       },
+    );
+  }
+
+  Future<void> _onFetchGlobalBinsForStatsRequested(
+    FetchGlobalBinsForStatsRequested event,
+    Emitter<BinState> emit,
+  ) async {
+    if (state.allBinsGlobal.isNotEmpty) return;
+
+    final result = await _repository.getBins(wardId: 0);
+    result.fold(
+      (_) {},
+      (bins) => emit(state.copyWith(allBinsGlobal: bins)),
     );
   }
 

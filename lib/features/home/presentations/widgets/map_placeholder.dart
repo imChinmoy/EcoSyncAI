@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
@@ -280,6 +281,7 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
       buildWhen: (previous, current) =>
           previous.filteredBins != current.filteredBins,
       builder: (context, binState) {
+        final l10n = AppLocalizations.of(context);
         final bins = binState.filteredBins;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _fitCameraToContent(bins);
@@ -314,7 +316,7 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
               child: FilledButton.icon(
                 onPressed: _goToCurrentLocation,
                 icon: const Icon(Icons.my_location, size: 16),
-                label: const Text('My location'),
+                label: Text(l10n.myLocation),
               ),
             ),
             if (_permissionDenied)
@@ -325,11 +327,11 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
                 child: Material(
                   color: Colors.black87,
                   borderRadius: BorderRadius.circular(10),
-                  child: const Padding(
-                    padding: EdgeInsets.all(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
                     child: Text(
-                      'Location permission denied. Enable it to show your live position.',
-                      style: TextStyle(color: Colors.white),
+                      l10n.locationPermissionDenied,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),

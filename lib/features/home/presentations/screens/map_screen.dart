@@ -1,3 +1,4 @@
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
@@ -139,7 +140,8 @@ class _MapScreenState extends State<MapScreen> {
                     // Content
                     Expanded(
                       child: BlocBuilder<BinBloc, BinState>(
-                        builder: (_, binState) {
+                        builder: (ctx, binState) {
+                          final l10n = AppLocalizations.of(ctx);
                           if (binState.status == BinStatus.loading ||
                               binState.status == BinStatus.initial) {
                             return const Padding(
@@ -148,15 +150,15 @@ class _MapScreenState extends State<MapScreen> {
                             );
                           }
                           if (binState.status == BinStatus.empty) {
-                            return const EmptyStateWidget(
-                              title: 'No bins in this ward',
-                              subtitle: 'All clear — no bins to show.',
+                            return EmptyStateWidget(
+                              title: l10n.mapNoBinsTitle,
+                              subtitle: l10n.mapNoBinsSubtitle,
                               icon: Icons.check_circle_outline,
                             );
                           }
                           if (binState.status == BinStatus.error) {
                             return EmptyStateWidget(
-                              title: 'Something went wrong',
+                              title: l10n.mapErrorGeneric,
                               subtitle: binState.errorMessage,
                               icon: Icons.error_outline,
                             );
@@ -188,7 +190,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
             // Ward dropdown button
@@ -299,6 +301,7 @@ class _FloatingBtn extends StatelessWidget {
 class _AlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -322,7 +325,7 @@ class _AlertCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'High filling rate in Ward 2',
+            l10n.mapFillingRateBanner,
             style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
           ),
         ],
@@ -338,6 +341,7 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       controller: scrollController,
       child: Column(
@@ -355,11 +359,11 @@ class _SheetHeader extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Row(
               children: [
-                Text('Nearby Bins', style: AppTextStyles.heading2),
+                Text(l10n.nearbyBins, style: AppTextStyles.heading2),
                 const Spacer(),
                 BlocBuilder<BinBloc, BinState>(
                   builder: (_, state) => Text(
-                    '${state.filteredBins.length} bins',
+                    '${state.filteredBins.length} ${l10n.binsWord}',
                     style: AppTextStyles.bodySecondary,
                   ),
                 ),
@@ -374,19 +378,19 @@ class _SheetHeader extends StatelessWidget {
                 children: [
                   _StatChip(
                     count: p.fullBins,
-                    label: 'Full',
+                    label: l10n.labelFull,
                     color: AppColors.statusFull,
                   ),
                   const SizedBox(width: 6),
                   _StatChip(
                     count: p.fillingBins,
-                    label: 'Filling',
+                    label: l10n.labelFilling,
                     color: AppColors.statusFilling,
                   ),
                   const SizedBox(width: 6),
                   _StatChip(
                     count: p.emptyBins,
-                    label: 'Empty',
+                    label: l10n.labelEmpty,
                     color: AppColors.statusEmpty,
                   ),
                 ],

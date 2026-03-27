@@ -92,6 +92,54 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
+  void _showScannerInfo(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text('AI Scanner', style: AppTextStyles.heading3),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Capture an image of waste to receive AI-powered sorting guidance and disposal advice.',
+                  style: AppTextStyles.bodySecondary.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Got it'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ScannerBloc, ScannerState>(
@@ -132,6 +180,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
             // 🔘 Scan Button
             _buildScanButton(context),
+
+            // Torch control
+            _buildTorchControl(),
 
             // 📦 Bottom control panel
             _buildBottomControls(),
@@ -191,9 +242,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   'AI Scanner',
                   style: AppTextStyles.heading2.copyWith(color: Colors.white),
                 ),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.help_outline, color: Colors.white, size: 20),
+                    IconButton(
+                      onPressed: () => _showScannerInfo(context),
+                      icon: const Icon(
+                        Icons.help_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 20,
+                    ),
                     SizedBox(width: 16),
                     Icon(Icons.more_vert, color: Colors.white, size: 20),
                   ],
@@ -314,7 +374,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.18),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 4),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 4,
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
@@ -349,31 +412,33 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _buildBottomControls() {
+  Widget _buildTorchControl() {
     return Positioned(
-      bottom: 40,
-      left: 32,
-      right: 32,
-      child: GlassCard(
-        radius: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildControlButton(Icons.photo_library_outlined, () {}),
-            BlocBuilder<ScannerBloc, ScannerState>(
-              builder: (context, state) {
-                return _buildControlButton(
-                  state.isTorchOn ? Icons.flash_on : Icons.flash_off_outlined,
-                  () => context.read<ScannerBloc>().add(const TorchToggled()),
-                  color: state.isTorchOn ? AppColors.primary : Colors.white,
-                );
-              },
-            ),
-            _buildControlButton(Icons.settings_outlined, () {}),
-          ],
+      bottom: 136,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Transform.translate(
+          offset: const Offset(76, 0),
+          child: _buildTorchButton(),
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomControls() {
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildTorchButton() {
+    return BlocBuilder<ScannerBloc, ScannerState>(
+      builder: (context, state) {
+        return _buildControlButton(
+          state.isTorchOn ? Icons.flash_on : Icons.flash_off_outlined,
+          () => context.read<ScannerBloc>().add(const TorchToggled()),
+          color: state.isTorchOn ? AppColors.primary : Colors.white,
+        );
+      },
     );
   }
 

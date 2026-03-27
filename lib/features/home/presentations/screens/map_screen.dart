@@ -134,40 +134,10 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Drag handle + sheet header
-                    _SheetHeader(scrollController: scrollController),
-
-                    // Content
                     Expanded(
-                      child: BlocBuilder<BinBloc, BinState>(
-                        builder: (ctx, binState) {
-                          final l10n = AppLocalizations.of(ctx);
-                          if (binState.status == BinStatus.loading ||
-                              binState.status == BinStatus.initial) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: LoadingShimmer(itemCount: 4),
-                            );
-                          }
-                          if (binState.status == BinStatus.empty) {
-                            return EmptyStateWidget(
-                              title: l10n.mapNoBinsTitle,
-                              subtitle: l10n.mapNoBinsSubtitle,
-                              icon: Icons.check_circle_outline,
-                            );
-                          }
-                          if (binState.status == BinStatus.error) {
-                            return EmptyStateWidget(
-                              title: l10n.mapErrorGeneric,
-                              subtitle: binState.errorMessage,
-                              icon: Icons.error_outline,
-                            );
-                          }
-                          return _BinSheetList(
-                            scrollController: scrollController,
-                            onBinTap: _showBinDetail,
-                          );
-                        },
+                      child: _BinSheetScrollView(
+                        scrollController: scrollController,
+                        onBinTap: _showBinDetail,
                       ),
                     ),
                   ],
@@ -336,69 +306,70 @@ class _AlertCard extends StatelessWidget {
 
 // ── Sheet Header ─────────────────────────────────────────────────────────────
 class _SheetHeader extends StatelessWidget {
-  final ScrollController scrollController;
-  const _SheetHeader({required this.scrollController});
+  const _SheetHeader();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return SingleChildScrollView(
-      controller: scrollController,
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.iconMuted,
-              borderRadius: BorderRadius.circular(2),
-            ),
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        Container(
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.iconMuted,
+            borderRadius: BorderRadius.circular(2),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Text(l10n.nearbyBins, style: AppTextStyles.heading2),
+              const Spacer(),
+              BlocBuilder<BinBloc, BinState>(
+                buildWhen: (previous, current) =>
+                    previous.filteredBins.length != current.filteredBins.length,
+                builder: (_, state) => Text(
+                  '${state.filteredBins.length} ${l10n.binsWord}',
+                  style: AppTextStyles.bodySecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        BlocBuilder<BinBloc, BinState>(
+          buildWhen: (previous, current) =>
+              previous.fullBins != current.fullBins ||
+              previous.fillingBins != current.fillingBins ||
+              previous.emptyBins != current.emptyBins,
+          builder: (_, p) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Row(
               children: [
-                Text(l10n.nearbyBins, style: AppTextStyles.heading2),
-                const Spacer(),
-                BlocBuilder<BinBloc, BinState>(
-                  builder: (_, state) => Text(
-                    '${state.filteredBins.length} ${l10n.binsWord}',
-                    style: AppTextStyles.bodySecondary,
-                  ),
+                _StatChip(
+                  count: p.fullBins,
+                  label: l10n.labelFull,
+                  color: AppColors.statusFull,
+                ),
+                const SizedBox(width: 6),
+                _StatChip(
+                  count: p.fillingBins,
+                  label: l10n.labelFilling,
+                  color: AppColors.statusFilling,
+                ),
+                const SizedBox(width: 6),
+                _StatChip(
+                  count: p.emptyBins,
+                  label: l10n.labelEmpty,
+                  color: AppColors.statusEmpty,
                 ),
               ],
             ),
           ),
-          // Stats row
-          BlocBuilder<BinBloc, BinState>(
-            builder: (_, p) => Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
-                children: [
-                  _StatChip(
-                    count: p.fullBins,
-                    label: l10n.labelFull,
-                    color: AppColors.statusFull,
-                  ),
-                  const SizedBox(width: 6),
-                  _StatChip(
-                    count: p.fillingBins,
-                    label: l10n.labelFilling,
-                    color: AppColors.statusFilling,
-                  ),
-                  const SizedBox(width: 6),
-                  _StatChip(
-                    count: p.emptyBins,
-                    label: l10n.labelEmpty,
-                    color: AppColors.statusEmpty,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -444,24 +415,70 @@ class _StatChip extends StatelessWidget {
 }
 
 // ── Bin Sheet List ────────────────────────────────────────────────────────────
-class _BinSheetList extends StatelessWidget {
+class _BinSheetScrollView extends StatelessWidget {
   final ScrollController scrollController;
   final void Function(BinEntity bin) onBinTap;
 
-  const _BinSheetList({required this.scrollController, required this.onBinTap});
+  const _BinSheetScrollView({
+    required this.scrollController,
+    required this.onBinTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<BinBloc, BinState>(
-      builder: (_, binProv) {
-        return ListView.builder(
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.errorMessage != current.errorMessage ||
+          previous.filteredBins != current.filteredBins ||
+          previous.fullBins != current.fullBins ||
+          previous.fillingBins != current.fillingBins ||
+          previous.emptyBins != current.emptyBins,
+      builder: (ctx, binState) {
+        final l10n = AppLocalizations.of(ctx);
+        return CustomScrollView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          itemCount: binProv.filteredBins.length,
-          itemBuilder: (_, i) => BinCard(
-            bin: binProv.filteredBins[i],
-            onTap: () => onBinTap(binProv.filteredBins[i]),
-          ),
+          physics: const ClampingScrollPhysics(),
+          slivers: [
+            const SliverToBoxAdapter(child: _SheetHeader()),
+            if (binState.status == BinStatus.loading ||
+                binState.status == BinStatus.initial)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: LoadingShimmer(itemCount: 4),
+                ),
+              )
+            else if (binState.status == BinStatus.empty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyStateWidget(
+                  title: l10n.mapNoBinsTitle,
+                  subtitle: l10n.mapNoBinsSubtitle,
+                  icon: Icons.check_circle_outline,
+                ),
+              )
+            else if (binState.status == BinStatus.error)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyStateWidget(
+                  title: l10n.mapErrorGeneric,
+                  subtitle: binState.errorMessage,
+                  icon: Icons.error_outline,
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                sliver: SliverList.builder(
+                  itemCount: binState.filteredBins.length,
+                  itemBuilder: (_, i) => BinCard(
+                    bin: binState.filteredBins[i],
+                    onTap: () => onBinTap(binState.filteredBins[i]),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

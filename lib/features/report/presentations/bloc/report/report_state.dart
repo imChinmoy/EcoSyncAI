@@ -1,10 +1,10 @@
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 
 enum ReportStatus { idle, submitting, success, error }
 
 class ReportState {
   final ReportStatus status;
-  final BinModel? selectedBin;
+  final BinEntity? selectedBin;
   final int? selectedWardId;
   final String description;
   final bool hasImage;
@@ -27,7 +27,7 @@ class ReportState {
 
   ReportState copyWith({
     ReportStatus? status,
-    BinModel? selectedBin,
+    BinEntity? selectedBin,
     int? selectedWardId,
     bool clearSelectedBin = false,
     String? description,

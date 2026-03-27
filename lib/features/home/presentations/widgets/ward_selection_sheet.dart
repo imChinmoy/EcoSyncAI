@@ -1,11 +1,12 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
+import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/dummy_data/models/ward_model.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_event.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_state.dart';
+import 'package:ecosyncai/features/home/domain/entities/ward_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,12 +17,9 @@ class WardSelectionSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<WardBloc, WardState>(
       builder: (context, wardProv) {
-        return Container(
+        return GlassCard(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          decoration: const BoxDecoration(
-            color: AppColors.sheetBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
+          radius: 24,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +63,7 @@ class WardSelectionSheet extends StatelessWidget {
 }
 
 class _WardTile extends StatelessWidget {
-  final WardModel ward;
+  final WardEntity ward;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -83,10 +81,12 @@ class _WardTile extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
+        decoration: AppEffects.clay(
+          radius: 12,
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.1)
-              : AppColors.surface,
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : AppColors.cardBackground,
+        ).copyWith(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.divider,

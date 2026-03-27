@@ -1,11 +1,15 @@
-import 'package:ecosyncai/dummy_data/models/ward_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/ward_entity.dart';
 
 abstract class WardEvent {
   const WardEvent();
 }
 
+class FetchWardsRequested extends WardEvent {
+  const FetchWardsRequested();
+}
+
 class PendingWardChanged extends WardEvent {
-  final WardModel ward;
+  final WardEntity ward;
 
   const PendingWardChanged(this.ward);
 }

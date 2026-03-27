@@ -1,5 +1,7 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConstants {
-  static const String baseUrl = 'https://api.ecosyncai.com';
+  static final String baseUrl = dotenv.env['API_BASE_URL'] ?? '';
 }
 
 class ApiEndpoints {
@@ -16,8 +18,15 @@ class ApiEndpoints {
 
   //bins
   static const String getBins = '/bins';
+  static const String getWards = '/wards';
   static const String createBin = '/bins';
   static const String getBin = '/bins/{id}';
   static const String updateBin = '/bins/{id}';
   static const String deleteBin = '/bins/{id}';
+
+  //scanner
+  static const String classifyWaste = '/classify';
+
+  //report
+  static const String complaint = '/complaint';
 }

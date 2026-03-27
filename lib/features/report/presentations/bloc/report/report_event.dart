@@ -1,11 +1,11 @@
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 
 abstract class ReportEvent {
   const ReportEvent();
 }
 
 class ReportBinSet extends ReportEvent {
-  final BinModel bin;
+  final BinEntity bin;
 
   const ReportBinSet(this.bin);
 }

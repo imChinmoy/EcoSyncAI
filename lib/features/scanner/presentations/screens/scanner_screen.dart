@@ -1,6 +1,8 @@
 import 'package:camera/camera.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
+import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
+import 'package:ecosyncai/features/scanner/domain/entities/scanner_result_entity.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_event.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_state.dart';
@@ -93,8 +95,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return BlocListener<ScannerBloc, ScannerState>(
       listenWhen: (previous, current) =>
-          previous.isTorchOn != current.isTorchOn,
+          previous.isTorchOn != current.isTorchOn ||
+          previous.status != current.status,
       listener: (context, state) async {
+        if (state.status == ScannerStatus.success && state.result != null) {
+          _showResultBottomSheet(context, state.result!);
+        } else if (state.status == ScannerStatus.error &&
+            state.errorMessage.isNotEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.errorMessage)));
+        }
+
         if (_controller != null && _controller!.value.isInitialized) {
           try {
             await _controller!.setFlashMode(
@@ -118,7 +130,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             _buildOverlay(context),
 
             // 🔘 Scan Button
-            _buildScanButton(),
+            _buildScanButton(context),
 
             // 📦 Bottom control panel
             _buildBottomControls(),
@@ -192,12 +204,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
           const SizedBox(height: 24),
 
           // Status Label
-          Container(
+          GlassCard(
+            radius: 20,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
             child: Text(
               'Position waste clearly',
               style: AppTextStyles.bodySecondary.copyWith(color: Colors.white),
@@ -288,39 +297,54 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _buildScanButton() {
-    return Positioned(
-      bottom: 120,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.2),
-            border: Border.all(color: Colors.white, width: 4),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: ElevatedButton(
-              onPressed: _takePicture,
-              style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.all(16),
-                elevation: 0,
+  Widget _buildScanButton(BuildContext context) {
+    return BlocBuilder<ScannerBloc, ScannerState>(
+      builder: (context, state) {
+        final isLoading = state.status == ScannerStatus.loading;
+
+        return Positioned(
+          bottom: 120,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.18),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 4),
               ),
-              child: const Icon(
-                Icons.qr_code_scanner,
-                color: Colors.white,
-                size: 32,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : _takePicture,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.all(16),
+                    elevation: 0,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.qr_code_scanner,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -329,13 +353,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
       bottom: 40,
       left: 32,
       right: 32,
-      child: Container(
+      child: GlassCard(
+        radius: 30,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -364,6 +384,68 @@ class _ScannerScreenState extends State<ScannerScreen> {
     return IconButton(
       icon: Icon(icon, color: color, size: 24),
       onPressed: onPressed,
+    );
+  }
+
+  void _showResultBottomSheet(
+    BuildContext context,
+    ScannerResultEntity result,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        final confidence = result.confidence == null
+            ? 'N/A'
+            : '${(result.confidence! <= 1 ? result.confidence! * 100 : result.confidence!).toStringAsFixed(1)}%';
+
+        return SafeArea(
+          child: GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Scan Result', style: AppTextStyles.heading2),
+                const SizedBox(height: 12),
+                Text('Item: ${result.label}', style: AppTextStyles.body),
+                const SizedBox(height: 8),
+                Text(
+                  'Confidence: $confidence',
+                  style: AppTextStyles.bodySecondary,
+                ),
+                if (result.category != null && result.category!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Category: ${result.category!}',
+                    style: AppTextStyles.bodySecondary,
+                  ),
+                ],
+                if (result.disposalAdvice != null &&
+                    result.disposalAdvice!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Advice: ${result.disposalAdvice!}',
+                    style: AppTextStyles.bodySecondary,
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

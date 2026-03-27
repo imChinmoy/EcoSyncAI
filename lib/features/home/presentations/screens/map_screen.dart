@@ -1,6 +1,6 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/dummy_data/models/bin_model.dart';
+import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_event.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_state.dart';
@@ -32,6 +32,7 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WardBloc>().add(const FetchWardsRequested());
       context.read<BinBloc>().add(const FetchBinsRequested());
     });
   }
@@ -52,7 +53,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _showBinDetail(BinModel bin) {
+  void _showBinDetail(BinEntity bin) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -441,7 +442,7 @@ class _StatChip extends StatelessWidget {
 // ── Bin Sheet List ────────────────────────────────────────────────────────────
 class _BinSheetList extends StatelessWidget {
   final ScrollController scrollController;
-  final void Function(BinModel bin) onBinTap;
+  final void Function(BinEntity bin) onBinTap;
 
   const _BinSheetList({required this.scrollController, required this.onBinTap});
 

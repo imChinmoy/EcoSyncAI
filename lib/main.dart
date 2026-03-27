@@ -2,6 +2,8 @@ import 'package:ecosyncai/core/themes/app_theme.dart';
 import 'package:ecosyncai/dummy_data/services/mock_bin_service.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
+import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
+import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
 import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
@@ -24,7 +26,6 @@ class EcoSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final binService = MockBinService();
 
     return MultiBlocProvider(
@@ -38,7 +39,12 @@ class EcoSyncApp extends StatelessWidget {
         title: 'EcoSync AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const MainNavigationScreen(),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const RoleSelectionScreen(),
+          '/user_home': (context) => const MainNavigationScreen(),
+          '/driver_home': (context) => const DriverHomeScreen(),
+        },
       ),
     );
   }

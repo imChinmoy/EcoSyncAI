@@ -92,6 +92,24 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
+  Future<void> _toggleTorch() async {
+    final isTorchOn = context.read<ScannerBloc>().state.isTorchOn;
+    final nextMode = isTorchOn ? FlashMode.off : FlashMode.torch;
+
+    try {
+      if (_controller != null && _controller!.value.isInitialized) {
+        await _controller!.setFlashMode(nextMode);
+      }
+      if (mounted) {
+        context.read<ScannerBloc>().add(const TorchToggled());
+      }
+    } catch (e) {
+      if (mounted) {
+        context.read<ScannerBloc>().add(ScannerError('Flash error: $e'));
+      }
+    }
+  }
+
   void _showScannerInfo(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -143,9 +161,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<ScannerBloc, ScannerState>(
-      listenWhen: (previous, current) =>
-          previous.isTorchOn != current.isTorchOn ||
-          previous.status != current.status,
+      listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) async {
         if (state.status == ScannerStatus.success && state.result != null) {
           _showResultBottomSheet(context, state.result!);
@@ -156,17 +172,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ).showSnackBar(SnackBar(content: Text(state.errorMessage)));
         }
 
-        if (_controller != null && _controller!.value.isInitialized) {
-          try {
-            await _controller!.setFlashMode(
-              state.isTorchOn ? FlashMode.torch : FlashMode.off,
-            );
-          } catch (e) {
-            if (mounted) {
-              context.read<ScannerBloc>().add(ScannerError('Flash error: $e'));
-            }
-          }
-        }
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -181,11 +186,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
             // 🔘 Scan Button
             _buildScanButton(context),
 
-            // Torch control
             _buildTorchControl(),
 
-            // 📦 Bottom control panel
             _buildBottomControls(),
+
+            // Torch control
+
+            // 📦 Bottom control panel
           ],
         ),
       ),
@@ -201,7 +208,29 @@ class _ScannerScreenState extends State<ScannerScreen> {
       future: _initializeControllerFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return SizedBox.expand(child: CameraPreview(_controller!));
+          final preview = CameraPreview(_controller!);
+          final aspectRatio = _controller!.value.aspectRatio;
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final previewHeight = constraints.maxWidth * aspectRatio;
+
+              return ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.center,
+                  minWidth: constraints.maxWidth,
+                  maxWidth: constraints.maxWidth,
+                  minHeight: previewHeight,
+                  maxHeight: previewHeight,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: previewHeight,
+                    child: preview,
+                  ),
+                ),
+              );
+            },
+          );
         } else {
           return _buildLoadingPlaceholder();
         }
@@ -399,7 +428,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                           ),
                         )
                       : const Icon(
-                          Icons.qr_code_scanner,
+                          Icons.camera_alt,
                           color: Colors.white,
                           size: 32,
                         ),
@@ -418,9 +447,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
       left: 0,
       right: 0,
       child: Center(
-        child: Transform.translate(
-          offset: const Offset(76, 0),
-          child: _buildTorchButton(),
+        child: SizedBox(
+          width: 180,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _buildTorchButton(),
+            ],
+          ),
         ),
       ),
     );
@@ -435,7 +469,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       builder: (context, state) {
         return _buildControlButton(
           state.isTorchOn ? Icons.flash_on : Icons.flash_off_outlined,
-          () => context.read<ScannerBloc>().add(const TorchToggled()),
+          _toggleTorch,
           color: state.isTorchOn ? AppColors.primary : Colors.white,
         );
       },

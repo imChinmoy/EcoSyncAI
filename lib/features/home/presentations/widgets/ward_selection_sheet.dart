@@ -36,50 +36,67 @@ class _WardSelectionSheetState extends State<WardSelectionSheet> {
         return BlocBuilder<BinBloc, BinState>(
           builder: (context, binProv) {
             final l10n = AppLocalizations.of(context);
-            return GlassCard(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-              radius: 24,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.iconMuted,
-                        borderRadius: BorderRadius.circular(2),
+            final mediaQuery = MediaQuery.of(context);
+            return SafeArea(
+              top: false,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: mediaQuery.size.height * 0.8,
+                ),
+                child: GlassCard(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  radius: 24,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.iconMuted,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Text(l10n.selectWard, style: AppTextStyles.heading2),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: wardProv.wards.length,
+                          itemBuilder: (context, index) {
+                            final ward = wardProv.wards[index];
+                            return _WardTile(
+                              ward: ward,
+                              binCount: _wardBinCount(ward, wardProv, binProv),
+                              fullCount: _wardFullCount(ward, wardProv, binProv),
+                              isSelected: wardProv.pendingWard.id == ward.id,
+                              onTap: () => context
+                                  .read<WardBloc>()
+                                  .add(PendingWardChanged(ward)),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          final wardId = wardProv.pendingWard.id;
+                          context.read<WardBloc>().add(
+                            const WardSelectionApplied(),
+                          );
+                          context.read<BinBloc>().add(
+                            FetchBinsRequested(wardId: wardId),
+                          );
+                          Navigator.pop(context);
+                        },
+                        child: Text(l10n.applyArrow),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(l10n.selectWard, style: AppTextStyles.heading2),
-                  const SizedBox(height: 12),
-                  ...wardProv.wards.map(
-                    (ward) => _WardTile(
-                      ward: ward,
-                      binCount: _wardBinCount(ward, wardProv, binProv),
-                      fullCount: _wardFullCount(ward, wardProv, binProv),
-                      isSelected: wardProv.pendingWard.id == ward.id,
-                      onTap: () => context
-                          .read<WardBloc>()
-                          .add(PendingWardChanged(ward)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      final wardId = wardProv.pendingWard.id;
-                      context.read<WardBloc>().add(const WardSelectionApplied());
-                      context
-                          .read<BinBloc>()
-                          .add(FetchBinsRequested(wardId: wardId));
-                      Navigator.pop(context);
-                    },
-                    child: Text(l10n.applyArrow),
-                  ),
-                ],
+                ),
               ),
             );
           },

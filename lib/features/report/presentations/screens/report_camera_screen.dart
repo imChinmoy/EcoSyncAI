@@ -116,8 +116,28 @@ class _ReportCameraScreenState extends State<ReportCameraScreen> {
       future: _initializeControllerFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return SizedBox.expand(
-            child: CameraPreview(_controller!),
+          final preview = CameraPreview(_controller!);
+          final aspectRatio = _controller!.value.aspectRatio;
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final previewHeight = constraints.maxWidth * aspectRatio;
+
+              return ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.center,
+                  minWidth: constraints.maxWidth,
+                  maxWidth: constraints.maxWidth,
+                  minHeight: previewHeight,
+                  maxHeight: previewHeight,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: previewHeight,
+                    child: preview,
+                  ),
+                ),
+              );
+            },
           );
         } else {
           return const Center(child: CircularProgressIndicator(color: AppColors.primary));

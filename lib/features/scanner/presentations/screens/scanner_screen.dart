@@ -92,12 +92,76 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
+  Future<void> _toggleTorch() async {
+    final isTorchOn = context.read<ScannerBloc>().state.isTorchOn;
+    final nextMode = isTorchOn ? FlashMode.off : FlashMode.torch;
+
+    try {
+      if (_controller != null && _controller!.value.isInitialized) {
+        await _controller!.setFlashMode(nextMode);
+      }
+      if (mounted) {
+        context.read<ScannerBloc>().add(const TorchToggled());
+      }
+    } catch (e) {
+      if (mounted) {
+        context.read<ScannerBloc>().add(ScannerError('Flash error: $e'));
+      }
+    }
+  }
+
+  void _showScannerInfo(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome_outlined,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text('AI Scanner', style: AppTextStyles.heading3),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Capture an image of waste to receive AI-powered sorting guidance and disposal advice.',
+                  style: AppTextStyles.bodySecondary.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Got it'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ScannerBloc, ScannerState>(
-      listenWhen: (previous, current) =>
-          previous.isTorchOn != current.isTorchOn ||
-          previous.status != current.status,
+      listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) async {
         if (state.status == ScannerStatus.success && state.result != null) {
           _showResultBottomSheet(context, state.result!);
@@ -108,17 +172,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ).showSnackBar(SnackBar(content: Text(state.errorMessage)));
         }
 
-        if (_controller != null && _controller!.value.isInitialized) {
-          try {
-            await _controller!.setFlashMode(
-              state.isTorchOn ? FlashMode.torch : FlashMode.off,
-            );
-          } catch (e) {
-            if (mounted) {
-              context.read<ScannerBloc>().add(ScannerError('Flash error: $e'));
-            }
-          }
-        }
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -133,8 +186,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
             // 🔘 Scan Button
             _buildScanButton(context),
 
-            // 📦 Bottom control panel
+            _buildTorchControl(),
+
             _buildBottomControls(),
+
+            // Torch control
+
+            // 📦 Bottom control panel
           ],
         ),
       ),
@@ -150,7 +208,29 @@ class _ScannerScreenState extends State<ScannerScreen> {
       future: _initializeControllerFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return SizedBox.expand(child: CameraPreview(_controller!));
+          final preview = CameraPreview(_controller!);
+          final aspectRatio = _controller!.value.aspectRatio;
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final previewHeight = constraints.maxWidth * aspectRatio;
+
+              return ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.center,
+                  minWidth: constraints.maxWidth,
+                  maxWidth: constraints.maxWidth,
+                  minHeight: previewHeight,
+                  maxHeight: previewHeight,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: previewHeight,
+                    child: preview,
+                  ),
+                ),
+              );
+            },
+          );
         } else {
           return _buildLoadingPlaceholder();
         }
@@ -191,9 +271,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   'AI Scanner',
                   style: AppTextStyles.heading2.copyWith(color: Colors.white),
                 ),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.help_outline, color: Colors.white, size: 20),
+                    IconButton(
+                      onPressed: () => _showScannerInfo(context),
+                      icon: const Icon(
+                        Icons.help_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 20,
+                    ),
                     SizedBox(width: 16),
                     Icon(Icons.more_vert, color: Colors.white, size: 20),
                   ],
@@ -314,7 +403,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.18),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 4),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 4,
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
@@ -336,7 +428,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                           ),
                         )
                       : const Icon(
-                          Icons.qr_code_scanner,
+                          Icons.camera_alt,
                           color: Colors.white,
                           size: 32,
                         ),
@@ -349,31 +441,38 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _buildBottomControls() {
+  Widget _buildTorchControl() {
     return Positioned(
-      bottom: 40,
-      left: 32,
-      right: 32,
-      child: GlassCard(
-        radius: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildControlButton(Icons.photo_library_outlined, () {}),
-            BlocBuilder<ScannerBloc, ScannerState>(
-              builder: (context, state) {
-                return _buildControlButton(
-                  state.isTorchOn ? Icons.flash_on : Icons.flash_off_outlined,
-                  () => context.read<ScannerBloc>().add(const TorchToggled()),
-                  color: state.isTorchOn ? AppColors.primary : Colors.white,
-                );
-              },
-            ),
-            _buildControlButton(Icons.settings_outlined, () {}),
-          ],
+      bottom: 136,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: SizedBox(
+          width: 180,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _buildTorchButton(),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomControls() {
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildTorchButton() {
+    return BlocBuilder<ScannerBloc, ScannerState>(
+      builder: (context, state) {
+        return _buildControlButton(
+          state.isTorchOn ? Icons.flash_on : Icons.flash_off_outlined,
+          _toggleTorch,
+          color: state.isTorchOn ? AppColors.primary : Colors.white,
+        );
+      },
     );
   }
 

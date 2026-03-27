@@ -3,7 +3,11 @@ import 'package:ecosyncai/dummy_data/services/mock_bin_service.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
 import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
-import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
+import 'package:ecosyncai/features/driver/data/datasource/driver_dummy_datasource.dart';
+import 'package:ecosyncai/features/driver/data/repository/driver_repository_impl.dart';
+import 'package:ecosyncai/features/driver/domain/usecases/get_driver_task_detail.dart';
+import 'package:ecosyncai/features/driver/presentations/bloc/driver/driver_bloc.dart';
+import 'package:ecosyncai/features/driver/presentations/screens/driver_task_detail_screen.dart';
 import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
@@ -28,6 +32,11 @@ class EcoSyncApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final binService = MockBinService();
 
+    // Driver feature dependencies
+    final driverDataSource = DriverDummyDataSource();
+    final driverRepository = DriverRepositoryImpl(driverDataSource);
+    final getDriverTaskDetail = GetDriverTaskDetail(driverRepository);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => BinBloc(binService)),
@@ -43,7 +52,10 @@ class EcoSyncApp extends StatelessWidget {
         routes: {
           '/': (context) => const RoleSelectionScreen(),
           '/user_home': (context) => const MainNavigationScreen(),
-          '/driver_home': (context) => const DriverHomeScreen(),
+          '/driver_home': (context) => BlocProvider(
+            create: (_) => DriverBloc(getDriverTaskDetail: getDriverTaskDetail),
+            child: const DriverTaskDetailScreen(binId: 'BIN-0942-X'),
+          ),
         },
       ),
     );

@@ -1,7 +1,5 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
-import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
-import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:flutter/material.dart';
 
 class RoleSelectionScreen extends StatelessWidget {

@@ -29,9 +29,14 @@ class BinDetailSheet extends StatelessWidget {
   }
 
   Color get _capacityColor {
-    if (bin.capacity >= 80) return AppColors.statusFull;
-    if (bin.capacity >= 50) return AppColors.statusFilling;
-    return AppColors.statusEmpty;
+    switch (bin.status.toLowerCase()) {
+      case 'full':
+        return AppColors.statusFull;
+      case 'filling':
+        return AppColors.statusFilling;
+      default:
+        return AppColors.statusEmpty;
+    }
   }
 
   @override

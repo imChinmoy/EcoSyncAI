@@ -1,13 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ecosyncai/core/utils/app_constants.dart';
-import 'package:ecosyncai/dummy_data/models/complaint_model.dart';
-import 'package:ecosyncai/dummy_data/services/bin_service.dart';
+import 'package:ecosyncai/features/report/data/datasource/report_remote_data.dart';
 
 import 'report_event.dart';
 import 'report_state.dart';
 
 class ReportBloc extends Bloc<ReportEvent, ReportState> {
-  ReportBloc(this._service) : super(const ReportState()) {
+  ReportBloc(this._remoteData) : super(const ReportState()) {
     on<ReportBinSet>(_onReportBinSet);
     on<ReportDescriptionChanged>(_onReportDescriptionChanged);
     on<ReportMockImagePicked>(_onReportMockImagePicked);
@@ -19,7 +18,7 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     on<ReportWardSet>(_onReportWardSet);
   }
 
-  final BinService _service;
+  final ReportRemoteData _remoteData;
 
   void _onReportWardSet(ReportWardSet event, Emitter<ReportState> emit) {
     emit(state.copyWith(selectedWardId: event.wardId));
@@ -49,6 +48,7 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     emit(
       state.copyWith(
         selectedBin: event.bin,
+        selectedWardId: event.bin.wardId,
         status: ReportStatus.idle,
         description: '',
         hasImage: false,
@@ -98,23 +98,27 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     emit(state.copyWith(status: ReportStatus.submitting, errorMessage: ''));
 
     try {
-      final binId = state.selectedBin?.id ?? 'WARD_${state.selectedWardId}';
+      final lat = state.selectedBin?.lat ?? 28.6139;
+      final lng = state.selectedBin?.lng ?? 77.2090;
 
-      final complaint = ComplaintModel(
-        binId: binId,
-        description: state.description,
-        imagePath: state.capturedImagePath ?? 'mock_image_path',
-        aiLabel: state.aiLabel,
-        submittedAt: DateTime.now(),
+      final result = await _remoteData.submitComplaint(
+        wardId: state.selectedWardId!,
+        lat: lat,
+        lng: lng,
+        message: state.description.trim(),
+        imageUrl: state.capturedImagePath ?? '',
       );
 
-      final success = await _service.submitComplaint(complaint);
-      emit(
-        state.copyWith(
-          status: success ? ReportStatus.success : ReportStatus.error,
-          errorMessage: success ? '' : 'Submission failed. Try again.',
-        ),
-      );
+      result.fold((error) {
+        emit(
+          state.copyWith(
+            status: ReportStatus.error,
+            errorMessage: error.isEmpty ? 'Submission failed. Try again.' : error,
+          ),
+        );
+      }, (_) {
+        emit(state.copyWith(status: ReportStatus.success, errorMessage: ''));
+      });
     } catch (_) {
       emit(
         state.copyWith(

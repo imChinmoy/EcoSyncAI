@@ -1,19 +1,23 @@
-enum BinType { organic, recyclable, hazardous, electronic, other }
-
 class BinEntity {
   final String id;
-  final String title;
-  final String description;
-  final BinType type;
-  final String createdAt;
-  final String updatedAt;
+  final int wardId;
+  final double lat;
+  final double lng;
+  final String status;
+  final String category;
+  final int capacity;
+  final String address;
+  final DateTime lastUpdated;
 
-  BinEntity({
+  const BinEntity({
     required this.id,
-    required this.title,
-    required this.description,
-    required this.type,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.wardId,
+    required this.lat,
+    required this.lng,
+    required this.status,
+    required this.category,
+    required this.capacity,
+    required this.address,
+    required this.lastUpdated,
   });
 }

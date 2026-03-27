@@ -3,15 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_color.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: ColorScheme.fromSeed(
+        brightness: Brightness.dark,
         seedColor: AppColors.primary,
-        surface: AppColors.background,
+        surface: AppColors.surface,
         primary: AppColors.primary,
-        onPrimary: Colors.white,
+        onPrimary: AppColors.background,
+        onSurface: AppColors.textPrimary,
       ),
       textTheme: GoogleFonts.poppinsTextTheme().copyWith(
         bodyLarge: GoogleFonts.poppins(
@@ -38,7 +41,7 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
@@ -60,7 +63,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: Colors.white.withValues(alpha: 0.04),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
@@ -84,7 +87,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.background,
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -97,7 +100,7 @@ class AppTheme {
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.sheetBackground,
+        backgroundColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -110,4 +113,6 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get lightTheme => darkTheme;
 }

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:ecosyncai/core/themes/app_color.dart';
-import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
+import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -36,7 +36,7 @@ class _SplashScreenState extends State<SplashScreen>
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainNavigationScreen(),
+            const RoleSelectionScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -71,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ..duration = composition.duration
                       ..forward().whenComplete(_goToMain);
                   },
-                  errorBuilder: (_, __, ___) {
+                  errorBuilder: (context, error, stackTrace) {
                     WidgetsBinding.instance
                         .addPostFrameCallback((_) => _goToMain());
                     return const SizedBox.shrink();

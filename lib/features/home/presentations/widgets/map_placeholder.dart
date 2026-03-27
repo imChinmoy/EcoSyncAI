@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:ecosyncai/core/locale/app_localizations.dart';
+import 'package:ecosyncai/core/maps/map_styles.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/features/home/domain/entities/bin_entity.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
@@ -23,21 +24,6 @@ class MapPlaceholder extends StatefulWidget {
 
 class _MapPlaceholderState extends State<MapPlaceholder> {
   static const LatLng _fallbackCenter = LatLng(28.6139, 77.2090);
-  static const String _darkBlueMapStyle = '''
-[
-  {"elementType":"geometry","stylers":[{"color":"#0f1724"}]},
-  {"elementType":"labels.text.fill","stylers":[{"color":"#8fa5c4"}]},
-  {"elementType":"labels.text.stroke","stylers":[{"color":"#0b1220"}]},
-  {"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#2b3a50"}]},
-  {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#6f86a5"}]},
-  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#1a2740"}]},
-  {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#111c30"}]},
-  {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#88a1c0"}]},
-  {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#1a2a44"}]},
-  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0a2238"}]},
-  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#5f83ad"}]}
-]
-''';
 
   GoogleMapController? _mapController;
   StreamSubscription<Position>? _positionSub;
@@ -306,7 +292,7 @@ class _MapPlaceholderState extends State<MapPlaceholder> {
               markers: _buildBinMarkers(bins),
               onMapCreated: (controller) {
                 _mapController = controller;
-                controller.setMapStyle(_darkBlueMapStyle);
+                controller.setMapStyle(kDarkBlueMapStyle);
                 _fitCameraToContent(bins);
               },
             ),

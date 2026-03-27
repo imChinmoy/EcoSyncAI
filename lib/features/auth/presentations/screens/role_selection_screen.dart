@@ -21,7 +21,7 @@ class RoleSelectionScreen extends StatelessWidget {
               const Icon(Icons.eco, size: 80, color: AppColors.primary),
               const SizedBox(height: 24),
               Text(
-                'EcoSync AI',
+                'EcoSyncAI',
                 style: AppTextStyles.heading1.copyWith(fontSize: 32),
               ),
               const SizedBox(height: 8),
@@ -31,7 +31,7 @@ class RoleSelectionScreen extends StatelessWidget {
               ),
               const Spacer(),
               _RoleButton(
-                title: 'Continue as User',
+                title: 'Continue as Citizen',
                 subtitle: 'I want to report and track waste',
                 icon: Icons.person_outline,
                 onPressed: () {

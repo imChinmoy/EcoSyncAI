@@ -29,4 +29,9 @@ class ApiEndpoints {
 
   //report
   static const String complaint = '/complaint';
+
+  //driver
+  static const String driverLocation = '/driver/location';
+  static const String routeDriver = '/route/driver';
+  static const String collectBin = '/collect/bin';
 }

@@ -52,6 +52,7 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
         status: ReportStatus.idle,
         description: '',
         hasImage: false,
+        clearCapturedImagePath: true,
         aiLabel: '',
         errorMessage: '',
       ),
@@ -79,7 +80,13 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     ReportImageRemoved event,
     Emitter<ReportState> emit,
   ) {
-    emit(state.copyWith(hasImage: false, aiLabel: '', capturedImagePath: null));
+    emit(
+      state.copyWith(
+        hasImage: false,
+        clearCapturedImagePath: true,
+        aiLabel: '',
+      ),
+    );
   }
 
   Future<void> _onReportSubmitted(

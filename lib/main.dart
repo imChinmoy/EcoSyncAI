@@ -4,28 +4,29 @@ import 'package:ecosyncai/core/locale/app_locale_scope.dart';
 import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/locale/locale_controller.dart';
 import 'package:ecosyncai/core/themes/app_theme.dart';
+import 'package:ecosyncai/features/driver/data/datasource/driver_dummy_datasource.dart';
+import 'package:ecosyncai/features/driver/data/datasource/driver_remote_datasource.dart';
+import 'package:ecosyncai/features/driver/data/directions/google_directions_service.dart';
+import 'package:ecosyncai/features/driver/data/repository/driver_repository_impl.dart';
+import 'package:ecosyncai/features/driver/domain/usecases/get_driver_task_detail.dart';
+import 'package:ecosyncai/features/driver/presentations/bloc/driver/driver_bloc.dart';
+import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
 import 'package:ecosyncai/features/home/data/datasource/remote_data.dart';
 import 'package:ecosyncai/features/home/data/repository/bin_repo_impl.dart';
 import 'package:ecosyncai/features/home/data/repository/ward_repo_impl.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
-import 'package:ecosyncai/features/driver/data/datasource/driver_dummy_datasource.dart';
-import 'package:ecosyncai/features/driver/data/datasource/driver_remote_datasource.dart';
-import 'package:ecosyncai/features/driver/data/directions/google_directions_service.dart';
-import 'package:ecosyncai/features/driver/data/repository/driver_repository_impl.dart';
-import 'package:ecosyncai/features/driver/domain/repository/driver_repository.dart';
-import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
 import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
-import 'package:ecosyncai/features/splash/presentations/screens/splash_screen.dart';
 import 'package:ecosyncai/features/report/data/datasource/report_remote_data.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
 import 'package:ecosyncai/features/scanner/data/datasource/scanner_remote_data.dart';
 import 'package:ecosyncai/features/scanner/data/repository/scanner_repo_impl.dart';
 import 'package:ecosyncai/features/scanner/presentations/bloc/scanner/scanner_bloc.dart';
+import 'package:ecosyncai/features/splash/presentations/screens/splash_screen.dart';
 import 'package:ecosyncai/core/network/network.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -67,6 +68,15 @@ class EcoSyncApp extends StatelessWidget {
     final reportRemote = ReportRemoteDataImpl();
     final scannerRemote = ScannerRemoteDataImpl();
     final scannerRepo = ScannerRepoImpl(remoteData: scannerRemote);
+    final driverDataSource = DriverDummyDataSource();
+    final driverRemoteDataSource = DriverRemoteDataSourceImpl();
+    final directionsService = GoogleDirectionsService();
+    final driverRepo = DriverRepositoryImpl(
+      driverDataSource,
+      driverRemoteDataSource,
+      directionsService,
+    );
+    final getDriverTaskDetail = GetDriverTaskDetail(driverRepo);
 
     return MultiBlocProvider(
       providers: [
@@ -74,6 +84,9 @@ class EcoSyncApp extends StatelessWidget {
         BlocProvider(create: (_) => WardBloc(wardRepo)),
         BlocProvider(create: (_) => ReportBloc(reportRemote)),
         BlocProvider(create: (_) => ScannerBloc(scannerRepo)),
+        BlocProvider(
+          create: (_) => DriverBloc(getDriverTaskDetail: getDriverTaskDetail),
+        ),
       ],
       child: AppLocaleScope(
         controller: localeController,
@@ -96,17 +109,7 @@ class EcoSyncApp extends StatelessWidget {
               ],
               routes: {
                 '/user_home': (context) => const MainNavigationScreen(),
-                '/driver_home': (context) {
-                  final driverRepo = DriverRepositoryImpl(
-                    DriverDummyDataSource(),
-                    DriverRemoteDataSourceImpl(),
-                    GoogleDirectionsService(),
-                  );
-                  return RepositoryProvider<DriverRepository>.value(
-                    value: driverRepo,
-                    child: const DriverHomeScreen(),
-                  );
-                },
+                '/driver_home': (context) => const DriverHomeScreen(),
               },
               home: const SplashScreen(),
             );

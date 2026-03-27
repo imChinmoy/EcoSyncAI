@@ -30,6 +30,7 @@ class ReportState {
     BinEntity? selectedBin,
     int? selectedWardId,
     bool clearSelectedBin = false,
+    bool clearCapturedImagePath = false,
     String? description,
     bool? hasImage,
     String? capturedImagePath,
@@ -43,7 +44,9 @@ class ReportState {
       selectedWardId: selectedWardId ?? this.selectedWardId,
       description: description ?? this.description,
       hasImage: hasImage ?? this.hasImage,
-      capturedImagePath: capturedImagePath ?? this.capturedImagePath,
+      capturedImagePath: clearCapturedImagePath
+          ? null
+          : (capturedImagePath ?? this.capturedImagePath),
       isTorchOn: isTorchOn ?? this.isTorchOn,
       aiLabel: aiLabel ?? this.aiLabel,
       errorMessage: errorMessage ?? this.errorMessage,

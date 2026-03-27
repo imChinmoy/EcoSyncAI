@@ -38,7 +38,7 @@ class DriverFloatingNavBar extends StatelessWidget {
             onTap: () => onTap(0),
           ),
           _NavBarItem(
-            icon: Icons.map_outlined,
+            icon: Icons.route_outlined,
             label: 'MAP',
             isActive: currentIndex == 1,
             onTap: () => onTap(1),

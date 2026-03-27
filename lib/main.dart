@@ -9,6 +9,13 @@ import 'package:ecosyncai/features/home/data/repository/bin_repo_impl.dart';
 import 'package:ecosyncai/features/home/data/repository/ward_repo_impl.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
+import 'package:ecosyncai/features/driver/data/datasource/driver_dummy_datasource.dart';
+import 'package:ecosyncai/features/driver/data/datasource/driver_remote_datasource.dart';
+import 'package:ecosyncai/features/driver/data/directions/google_directions_service.dart';
+import 'package:ecosyncai/features/driver/data/repository/driver_repository_impl.dart';
+import 'package:ecosyncai/features/driver/domain/repository/driver_repository.dart';
+import 'package:ecosyncai/features/driver/presentations/screens/driver_home_screen.dart';
+import 'package:ecosyncai/features/main/presentations/screens/main_navigation_screen.dart';
 import 'package:ecosyncai/features/splash/presentations/screens/splash_screen.dart';
 import 'package:ecosyncai/features/report/data/datasource/report_remote_data.dart';
 import 'package:ecosyncai/features/report/presentations/bloc/report/report_bloc.dart';
@@ -87,6 +94,20 @@ class EcoSyncApp extends StatelessWidget {
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
+              routes: {
+                '/user_home': (context) => const MainNavigationScreen(),
+                '/driver_home': (context) {
+                  final driverRepo = DriverRepositoryImpl(
+                    DriverDummyDataSource(),
+                    DriverRemoteDataSourceImpl(),
+                    GoogleDirectionsService(),
+                  );
+                  return RepositoryProvider<DriverRepository>.value(
+                    value: driverRepo,
+                    child: const DriverHomeScreen(),
+                  );
+                },
+              },
               home: const SplashScreen(),
             );
           },

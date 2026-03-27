@@ -3,6 +3,7 @@ import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
+import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,6 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = AppLocalizations.of(context);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const RoleSelectionScreen()), (route) => false);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.sessionCleared)),

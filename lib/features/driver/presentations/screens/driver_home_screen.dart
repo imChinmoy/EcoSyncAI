@@ -1,8 +1,12 @@
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/auth/presentations/screens/role_selection_screen.dart';
-import 'package:ecosyncai/features/driver/presentations/bloc/driver/driver_bloc.dart';
+import 'package:ecosyncai/features/driver/domain/repository/driver_repository.dart';
+import 'package:ecosyncai/features/driver/presentations/cubit/driver_route_session_cubit.dart';
 import 'package:ecosyncai/features/driver/presentations/screens/driver_task_detail_screen.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_bloc.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_event.dart';
+import 'package:ecosyncai/features/home/presentations/bloc/ward/ward_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -147,12 +151,26 @@ class DriverHomeScreen extends StatelessWidget {
   }
 
   void _openTaskDetail(BuildContext context) {
-    Navigator.push(
+    final repo = context.read<DriverRepository>();
+    final wardBloc = context.read<WardBloc>();
+    if (wardBloc.state.status != WardStatus.loaded) {
+      wardBloc.add(FetchWardsRequested());
+    }
+    final wards = wardBloc.state.wards.where((w) => w.id != 0).toList();
+    Navigator.push<void>(
       context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<DriverBloc>(),
-          child: const DriverTaskDetailScreen(binId: 'BIN-0942-X'),
+      MaterialPageRoute<void>(
+        builder: (_) => RepositoryProvider<DriverRepository>.value(
+          value: repo,
+          child: BlocProvider(
+            create: (_) => DriverRouteSessionCubit(
+              repository: repo,
+              driverId: 'driver_01',
+              initialWardId: wards.isNotEmpty ? wards.first.id : 1,
+              selectableWards: wards.isNotEmpty ? wards : null,
+            )..initialize(),
+            child: const DriverTaskDetailScreen(),
+          ),
         ),
       ),
     );

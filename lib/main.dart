@@ -54,44 +54,44 @@ class EcoSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remote = RemoteDataImpl();
-    final repo = BinRepoImpl(remoteData: remote);
-    final wardRepo = WardRepoImpl(remoteData: remote);
+    final remoteData = RemoteDataImpl();
+    final binRepo = BinRepoImpl(remoteData: remoteData);
+    final wardRepo = WardRepoImpl(remoteData: remoteData);
     final reportRemote = ReportRemoteDataImpl();
     final scannerRemote = ScannerRemoteDataImpl();
     final scannerRepo = ScannerRepoImpl(remoteData: scannerRemote);
 
-    return ListenableBuilder(
-      listenable: localeController,
-      builder: (context, _) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider(create: (_) => BinBloc(repo)),
-            BlocProvider(create: (_) => WardBloc(wardRepo)),
-            BlocProvider(create: (_) => ReportBloc(reportRemote)),
-            BlocProvider(create: (_) => ScannerBloc(scannerRepo)),
-          ],
-          child: MaterialApp(
-            title: 'EcoSyncAI',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.dark,
-            locale: localeController.locale,
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            home: AppLocaleScope(
-              controller: localeController,
-              child: const SplashScreen(),
-            ),
-          ),
-        );
-      },
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => BinBloc(binRepo)),
+        BlocProvider(create: (_) => WardBloc(wardRepo)),
+        BlocProvider(create: (_) => ReportBloc(reportRemote)),
+        BlocProvider(create: (_) => ScannerBloc(scannerRepo)),
+      ],
+      child: AppLocaleScope(
+        controller: localeController,
+        child: ListenableBuilder(
+          listenable: localeController,
+          builder: (context, _) {
+            return MaterialApp(
+              title: 'EcoSyncAI',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.darkTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: ThemeMode.dark,
+              locale: localeController.locale,
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: const SplashScreen(),
+            );
+          },
+        ),
+      ),
     );
   }
 }

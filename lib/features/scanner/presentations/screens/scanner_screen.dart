@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
@@ -398,6 +399,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
+        final l10n = AppLocalizations.of(sheetContext);
         final confidence = result.confidence == null
             ? 'N/A'
             : '${(result.confidence! <= 1 ? result.confidence! * 100 : result.confidence!).toStringAsFixed(1)}%';
@@ -410,18 +412,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Scan Result', style: AppTextStyles.heading2),
+                Text(l10n.scanResult, style: AppTextStyles.heading2),
                 const SizedBox(height: 12),
-                Text('Item: ${result.label}', style: AppTextStyles.body),
+                Text('${l10n.itemLabel}: ${result.label}', style: AppTextStyles.body),
                 const SizedBox(height: 8),
                 Text(
-                  'Confidence: $confidence',
+                  '${l10n.confidenceLabel}: $confidence',
                   style: AppTextStyles.bodySecondary,
                 ),
                 if (result.category != null && result.category!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'Category: ${result.category!}',
+                    '${l10n.category}: ${result.category!}',
                     style: AppTextStyles.bodySecondary,
                   ),
                 ],
@@ -429,7 +431,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     result.disposalAdvice!.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'Advice: ${result.disposalAdvice!}',
+                    '${l10n.adviceLabel}: ${result.disposalAdvice!}',
                     style: AppTextStyles.bodySecondary,
                   ),
                 ],
@@ -438,7 +440,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(sheetContext),
-                    child: const Text('Close'),
+                    child: Text(l10n.close),
                   ),
                 ),
               ],

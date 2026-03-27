@@ -1,14 +1,19 @@
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
+import 'package:ecosyncai/features/home/presentations/screens/map_screen.dart';
 import 'package:ecosyncai/features/scanner/presentations/screens/scanner_screen.dart';
 import 'package:flutter/material.dart';
+
+enum _MaterialBadge { success, tracking, none }
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -18,7 +23,7 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Header Section ───────────────────────────────────────────
-              _buildHeader(),
+              _buildHeader(l10n),
               const SizedBox(height: 24),
 
               // ── Summary Cards (Diverted & Offset) ───────────────────────
@@ -27,7 +32,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _buildSummaryCard(
                       icon: Icons.recycling,
-                      label: 'Diverted',
+                      label: l10n.diverted,
                       value: '12.4 kg',
                       iconColor: AppColors.statusEmpty,
                     ),
@@ -36,7 +41,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _buildSummaryCard(
                       icon: Icons.co2,
-                      label: 'Offset',
+                      label: l10n.offset,
                       value: '48 kg',
                       iconColor: Colors.blueAccent,
                     ),
@@ -46,18 +51,18 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 28),
 
               // ── AI Scanner Section ───────────────────────────────────────
-              _buildAiScannerCard(context),
+              _buildAiScannerCard(context, l10n),
               const SizedBox(height: 32),
 
               // ── Nearby & Schedules Section ───────────────────────────────
-              _buildSectionTitle('Nearby & Schedules'),
+              _buildSectionTitle(l10n.nearbySchedules),
               const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 3, child: _buildNearbyBinsCard()),
+                  Expanded(flex: 3, child: _buildNearbyBinsCard(l10n, context)),
                   const SizedBox(width: 16),
-                  Expanded(flex: 2, child: _buildScheduleCard()),
+                  Expanded(flex: 2, child: _buildScheduleCard(l10n)),
                 ],
               ),
               const SizedBox(height: 32),
@@ -66,9 +71,9 @@ class HomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSectionTitle('Materials Saved'),
+                  _buildSectionTitle(l10n.materialsSaved),
                   Text(
-                    'HISTORY',
+                    l10n.history,
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -79,26 +84,29 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _buildMaterialSavedItem(
-                label: 'Biodegradable',
-                subLabel: 'Organic Waste',
+                label: l10n.biodegradable,
+                subLabel: l10n.organicWaste,
                 value: '5.2 kg',
-                status: 'SUCCESS',
+                badge: _MaterialBadge.success,
+                l10n: l10n,
                 color: AppColors.statusEmpty,
               ),
               const SizedBox(height: 12),
               _buildMaterialSavedItem(
-                label: 'Recyclables',
-                subLabel: 'Plastic & Paper',
+                label: l10n.recyclables,
+                subLabel: l10n.plasticPaper,
                 value: '4.8 kg',
-                status: 'TRACKING',
+                badge: _MaterialBadge.tracking,
+                l10n: l10n,
                 color: Colors.lightBlueAccent,
               ),
               const SizedBox(height: 12),
               _buildMaterialSavedItem(
-                label: 'E-Waste',
-                subLabel: 'Electronics',
+                label: l10n.eWaste,
+                subLabel: l10n.electronics,
                 value: '2.4 kg',
-                status: '',
+                badge: _MaterialBadge.none,
+                l10n: l10n,
                 color: Colors.indigoAccent,
               ),
               const SizedBox(height: 20),
@@ -111,7 +119,7 @@ class HomeScreen extends StatelessWidget {
 
   // ── Helper Widgets ────────────────────────────────────────────────────────
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -119,7 +127,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'GLOBAL CITIZEN',
+              l10n.globalCitizen,
               style: AppTextStyles.caption.copyWith(
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.bold,
@@ -127,7 +135,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Hello, Alex',
+              l10n.helloAlex,
               style: AppTextStyles.heading1.copyWith(fontSize: 28),
             ),
           ],
@@ -138,14 +146,14 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                '340 pts',
+                '340${l10n.pointsSuffix}',
                 style: AppTextStyles.heading3.copyWith(
                   color: AppColors.statusEmpty,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'ECO TIER: GOLD',
+                l10n.ecoTierGold,
                 style: AppTextStyles.caption.copyWith(fontSize: 9),
               ),
             ],
@@ -192,7 +200,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAiScannerCard(BuildContext context) {
+  Widget _buildAiScannerCard(BuildContext context, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -241,7 +249,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Identify & Sort',
+            l10n.identifySort,
             style: AppTextStyles.heading2.copyWith(
               color: Colors.white,
               fontSize: 22,
@@ -249,7 +257,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Point your camera at any waste\nitem to get instant AI sorting\nadvice.',
+            l10n.sortCameraHint,
             textAlign: TextAlign.center,
             style: AppTextStyles.bodySecondary.copyWith(color: Colors.white70),
           ),
@@ -270,7 +278,7 @@ class HomeScreen extends StatelessWidget {
               ),
               elevation: 0,
             ),
-            child: const Text('Launch AI Scanner'),
+            child: Text(l10n.launchAiScanner),
           ),
         ],
       ),
@@ -281,53 +289,61 @@ class HomeScreen extends StatelessWidget {
     return Text(title, style: AppTextStyles.heading2.copyWith(fontSize: 18));
   }
 
-  Widget _buildNearbyBinsCard() {
+  Widget _buildNearbyBinsCard(AppLocalizations l10n, BuildContext context) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       radius: 24,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.statusEmpty.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MapScreen()),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.statusEmpty.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.location_on,
+                    color: AppColors.statusEmpty,
+                    size: 20,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.location_on,
-                  color: AppColors.statusEmpty,
-                  size: 20,
+                Text(
+                  l10n.activeHubs,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(
-                '3 ACTIVE HUBS',
-                style: AppTextStyles.caption.copyWith(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text('Nearby Bins', style: AppTextStyles.heading3),
-          const SizedBox(height: 4),
-          Text(
-            'Find a drop-off point within 500m',
-            style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildTinyAvatar(Colors.grey[300]!),
-              const SizedBox(width: 4),
-              _buildTinyAvatar(Colors.grey[400]!),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(l10n.nearbyBins, style: AppTextStyles.heading3),
+            const SizedBox(height: 4),
+            Text(
+              l10n.findDropoffNearby,
+              style: AppTextStyles.bodySecondary.copyWith(fontSize: 11),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildTinyAvatar(Colors.grey[300]!),
+                const SizedBox(width: 4),
+                _buildTinyAvatar(Colors.grey[400]!),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -344,7 +360,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildScheduleCard() {
+  Widget _buildScheduleCard(AppLocalizations l10n) {
     return GlassCard(
       padding: const EdgeInsets.all(20),
       radius: 24,
@@ -364,10 +380,10 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          Text('Tue 14', style: AppTextStyles.heading3),
+          Text(l10n.scheduleDaySample, style: AppTextStyles.heading3),
           const SizedBox(height: 4),
           Text(
-            'RECYCLE DAY',
+            l10n.recycleDay,
             style: AppTextStyles.caption.copyWith(
               fontSize: 9,
               fontWeight: FontWeight.bold,
@@ -382,7 +398,8 @@ class HomeScreen extends StatelessWidget {
     required String label,
     required String subLabel,
     required String value,
-    required String status,
+    required _MaterialBadge badge,
+    required AppLocalizations l10n,
     required Color color,
   }) {
     return GlassCard(
@@ -420,7 +437,7 @@ class HomeScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (status.isNotEmpty) ...[
+              if (badge != _MaterialBadge.none) ...[
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -428,17 +445,19 @@ class HomeScreen extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: status == 'SUCCESS'
+                    color: badge == _MaterialBadge.success
                         ? AppColors.statusEmpty.withValues(alpha: 0.1)
                         : Colors.blueAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    status,
+                    badge == _MaterialBadge.success
+                        ? l10n.success
+                        : l10n.tracking,
                     style: AppTextStyles.caption.copyWith(
                       fontSize: 8,
                       fontWeight: FontWeight.bold,
-                      color: status == 'SUCCESS'
+                      color: badge == _MaterialBadge.success
                           ? AppColors.statusEmpty
                           : Colors.blueAccent,
                     ),

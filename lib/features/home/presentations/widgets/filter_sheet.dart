@@ -1,3 +1,4 @@
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/core/utils/app_constants.dart';
@@ -27,6 +28,7 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       decoration: const BoxDecoration(
@@ -47,9 +49,9 @@ class _FilterSheetState extends State<FilterSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Filter Bins', style: AppTextStyles.heading2),
+          Text(l10n.filterBins, style: AppTextStyles.heading2),
           const SizedBox(height: 16),
-          Text('Status', style: AppTextStyles.heading3),
+          Text(l10n.status, style: AppTextStyles.heading3),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -69,7 +71,7 @@ class _FilterSheetState extends State<FilterSheet> {
             }).toList(),
           ),
           const SizedBox(height: 16),
-          Text('Category', style: AppTextStyles.heading3),
+          Text(l10n.category, style: AppTextStyles.heading3),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -103,7 +105,7 @@ class _FilterSheetState extends State<FilterSheet> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text('Clear', style: AppTextStyles.button.copyWith(color: AppColors.primary)),
+                  child: Text(l10n.clear, style: AppTextStyles.button.copyWith(color: AppColors.primary)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -119,7 +121,7 @@ class _FilterSheetState extends State<FilterSheet> {
                     );
                     Navigator.pop(context);
                   },
-                  child: const Text('Apply Filters'),
+                  child: Text(l10n.applyFilters),
                 ),
               ),
             ],

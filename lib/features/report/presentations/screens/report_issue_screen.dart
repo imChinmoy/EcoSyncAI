@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
 import 'package:ecosyncai/features/home/presentations/bloc/bin/bin_bloc.dart';
@@ -69,6 +70,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       },
       child: BlocBuilder<ReportBloc, ReportState>(
         builder: (context, state) {
+          final l10n = AppLocalizations.of(context);
           final bin =
               state.selectedBin ??
               context.select((BinBloc bloc) => bloc.state.selectedBin);
@@ -76,7 +78,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           return Scaffold(
             backgroundColor: AppColors.background,
             appBar: AppBar(
-              title: const Text('Report Issue'),
+              title: Text(l10n.reportIssueTitle),
               leading: Navigator.canPop(context)
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new, size: 18),
@@ -90,7 +92,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Ward Selection Dropdown
-                  Text('Select Ward', style: AppTextStyles.heading3),
+                  Text(l10n.selectWard, style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
                   BlocBuilder<WardBloc, WardState>(
                     builder: (context, wardState) {
@@ -105,7 +107,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           child: DropdownButton<int>(
                             value: _selectedWardId,
                             hint: Text(
-                              'Select Ward',
+                              l10n.selectWard,
                               style: AppTextStyles.bodySecondary,
                             ),
                             isExpanded: true,
@@ -139,7 +141,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   ),
                   const SizedBox(height: 20),
                   if (bin != null) ...[
-                    Text('Selected Bin', style: AppTextStyles.heading3),
+                    Text(l10n.selectedBin, style: AppTextStyles.heading3),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -193,7 +195,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  Text('Describe the Issue', style: AppTextStyles.heading3),
+                  Text(l10n.describeIssue, style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _ctrl,
@@ -202,15 +204,15 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ReportDescriptionChanged(value),
                     ),
                     style: AppTextStyles.body,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g., Bin is overflowing...',
+                    decoration: InputDecoration(
+                      hintText: l10n.issueHint,
                       alignLabelWithHint: true,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text('Add Photo', style: AppTextStyles.heading3),
+                  Text(l10n.addPhoto, style: AppTextStyles.heading3),
                   const SizedBox(height: 8),
-                  _buildPhotoSection(state),
+                  _buildPhotoSection(context, state),
                   const SizedBox(height: 20),
                   if (state.hasImage && state.aiLabel.isNotEmpty)
                     _AiLabelChip(label: state.aiLabel),
@@ -224,8 +226,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                 state.capturedImagePath!.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text(
-                                    'Please capture an image before submitting.',
+                                  content: Text(
+                                    l10n.captureImageFirst,
                                   ),
                                   backgroundColor: AppColors.statusFull,
                                   behavior: SnackBarBehavior.floating,
@@ -240,8 +242,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                             if (_selectedWardId == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text(
-                                    'Please select a ward first',
+                                  content: Text(
+                                    l10n.selectWardFirst,
                                   ),
                                   backgroundColor: AppColors.statusFull,
                                   behavior: SnackBarBehavior.floating,
@@ -272,7 +274,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text('Submit Complaint'),
+                        : Text(l10n.submitComplaint),
                   ),
                   const SizedBox(height: 16),
                   if (state.status == ReportStatus.error)
@@ -310,9 +312,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     );
   }
 
-  Widget _buildPhotoSection(ReportState state) {
+  Widget _buildPhotoSection(BuildContext context, ReportState state) {
+    final l10n = AppLocalizations.of(context);
     if (state.capturedImagePath != null) {
-      return _buildCapturedImagePreview(state);
+      return _buildCapturedImagePreview(context, state);
     }
 
     return GestureDetector(
@@ -338,14 +341,15 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
               color: AppColors.primary,
             ),
             const SizedBox(height: 8),
-            Text('Tap to take a photo', style: AppTextStyles.bodySecondary),
+            Text(l10n.tapToTakePhoto, style: AppTextStyles.bodySecondary),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCapturedImagePreview(ReportState state) {
+  Widget _buildCapturedImagePreview(BuildContext context, ReportState state) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 180,
       width: double.infinity,
@@ -391,7 +395,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    'Retake Photo',
+                    l10n.retakePhoto,
                     style: AppTextStyles.body.copyWith(
                       color: Colors.white,
                       fontSize: 12,

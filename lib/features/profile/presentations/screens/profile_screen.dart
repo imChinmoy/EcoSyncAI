@@ -1,3 +1,5 @@
+import 'package:ecosyncai/core/locale/app_locale_scope.dart';
+import 'package:ecosyncai/core/locale/app_localizations.dart';
 import 'package:ecosyncai/core/themes/app_color.dart';
 import 'package:ecosyncai/core/themes/app_effects.dart';
 import 'package:ecosyncai/core/themes/app_text_styles.dart';
@@ -15,11 +17,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
 
   Future<void> _clearSavedSession() async {
+    final l10n = AppLocalizations.of(context);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saved session cleared.')),
+      SnackBar(content: Text(l10n.sessionCleared)),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final controller = AppLocaleScope.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.sheetBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(l10n.language, style: AppTextStyles.heading2),
+              ),
+              RadioListTile<Locale>(
+                title: Text(l10n.languageEnglish, style: AppTextStyles.body),
+                value: const Locale('en'),
+                groupValue: controller.locale,
+                activeColor: AppColors.primary,
+                onChanged: (v) async {
+                  if (v != null) {
+                    await controller.setLocale(v);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  }
+                },
+              ),
+              RadioListTile<Locale>(
+                title: Text(l10n.languageHindi, style: AppTextStyles.body),
+                value: const Locale('hi'),
+                groupValue: controller.locale,
+                activeColor: AppColors.primary,
+                onChanged: (v) async {
+                  if (v != null) {
+                    await controller.setLocale(v);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -78,6 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final controller = AppLocaleScope.of(context);
+    final languageSubtitle = controller.locale.languageCode == 'hi'
+        ? l10n.languageHindi
+        : l10n.languageEnglish;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -86,10 +145,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Profile', style: AppTextStyles.heading1),
+              Text(l10n.profileTitle, style: AppTextStyles.heading1),
               const SizedBox(height: 4),
               Text(
-                'Manage your account and preferences',
+                l10n.profileSubtitle,
                 style: AppTextStyles.bodySecondary,
               ),
               const SizedBox(height: 16),
@@ -115,10 +174,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('EcoSync User', style: AppTextStyles.heading2),
+                          Text(l10n.profileUserName, style: AppTextStyles.heading2),
                           const SizedBox(height: 3),
                           Text(
-                            'Community volunteer',
+                            l10n.communityVolunteer,
                             style: AppTextStyles.bodySecondary,
                           ),
                           const SizedBox(height: 6),
@@ -132,7 +191,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              'Ward Monitor',
+                              l10n.wardMonitor,
                               style: AppTextStyles.badgeText.copyWith(
                                 color: AppColors.primary,
                               ),
@@ -144,8 +203,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     IconButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Edit profile will be available soon.'),
+                          SnackBar(
+                            content: Text(l10n.editProfileSoon),
                           ),
                         );
                       },
@@ -158,19 +217,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Row(
                 children: [
                   _buildStatCard(
-                    title: 'Reports',
+                    title: l10n.statReports,
                     value: '34',
                     icon: Icons.report_gmailerrorred_rounded,
                   ),
                   const SizedBox(width: 10),
                   _buildStatCard(
-                    title: 'Scans',
+                    title: l10n.statScans,
                     value: '112',
                     icon: Icons.qr_code_scanner_rounded,
                   ),
                   const SizedBox(width: 10),
                   _buildStatCard(
-                    title: 'Points',
+                    title: l10n.statPoints,
                     value: '860',
                     icon: Icons.star_rounded,
                   ),
@@ -178,7 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Preferences',
+                l10n.preferences,
                 style: AppTextStyles.heading3,
               ),
               const SizedBox(height: 8),
@@ -189,8 +248,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildActionTile(
                       icon: Icons.notifications_none_rounded,
-                      title: 'Push Notifications',
-                      subtitle: 'Alerts for nearby full bins and updates',
+                      title: l10n.pushNotifications,
+                      subtitle: l10n.pushNotificationsSubtitle,
                       trailing: Switch.adaptive(
                         value: _notificationsEnabled,
                         onChanged: (value) {
@@ -202,15 +261,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const Divider(height: 1),
                     _buildActionTile(
                       icon: Icons.language_rounded,
-                      title: 'Language',
-                      subtitle: 'English',
-                      onTap: () {},
+                      title: l10n.language,
+                      subtitle: languageSubtitle,
+                      onTap: () => _showLanguagePicker(context),
                     ),
                     const Divider(height: 1),
                     _buildActionTile(
                       icon: Icons.help_outline_rounded,
-                      title: 'Help & Support',
-                      subtitle: 'FAQs and contact options',
+                      title: l10n.helpSupport,
+                      subtitle: l10n.helpSupportSubtitle,
                       onTap: () {},
                     ),
                   ],
@@ -218,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Account',
+                l10n.account,
                 style: AppTextStyles.heading3,
               ),
               const SizedBox(height: 8),
@@ -229,15 +288,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildActionTile(
                       icon: Icons.shield_outlined,
-                      title: 'Privacy Policy',
+                      title: l10n.privacyPolicy,
                       onTap: () {},
                     ),
                     const Divider(height: 1),
                     _buildActionTile(
                       icon: Icons.logout_rounded,
                       iconColor: AppColors.statusFull,
-                      title: 'Clear Saved Session',
-                      subtitle: 'Removes local auth token from this device',
+                      title: l10n.clearSavedSession,
+                      subtitle: l10n.clearSavedSessionSubtitle,
                       trailing: const SizedBox.shrink(),
                       onTap: _clearSavedSession,
                     ),

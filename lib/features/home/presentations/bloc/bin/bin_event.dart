@@ -10,6 +10,11 @@ class FetchBinsRequested extends BinEvent {
   const FetchBinsRequested({this.wardId = 0});
 }
 
+/// Loads all bins for ward stats only; does not replace [BinState.allBins] or filters.
+class FetchGlobalBinsForStatsRequested extends BinEvent {
+  const FetchGlobalBinsForStatsRequested();
+}
+
 class BinSelected extends BinEvent {
   final BinEntity bin;
 
